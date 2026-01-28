@@ -52,6 +52,11 @@ classifiers = [
     "Natural Language :: English"
 ]
 
+[project.optional-dependencies]
+drf = [
+    "djangorestframework>=3.14",
+]
+
 [project.urls]
 Homepage = "https://github.com/S4NKALP/django-nepkit"
 
@@ -62,4 +67,3 @@ dev = [
     "pre-commit>=4.5.1",
     "ruff>=0.14.14",
 ]
-

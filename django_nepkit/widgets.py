@@ -2,82 +2,48 @@ from django import forms
 from django.urls import reverse_lazy
 
 
-# --------------------------------------------------
-# Utility mixin
-# --------------------------------------------------
-
-class ClassAttrMixin:
+def _append_css_class(attrs, class_name: str):
     """
-    Safely append CSS classes to widget attrs.
+    Django-idiomatic helper to append a CSS class without clobbering existing ones.
     """
-
-    css_class = ""
-
-    def _build_attrs(self, attrs):
-        attrs = attrs or {}
-        classes = attrs.get("class", "").split()
-        if self.css_class:
-            classes.append(self.css_class)
-        attrs["class"] = " ".join(dict.fromkeys(classes))
-        return attrs
+    existing = (attrs.get("class") or "").strip()
+    attrs["class"] = (f"{existing} {class_name}").strip() if existing else class_name
+    return attrs
 
 
-# --------------------------------------------------
-# Chained Select Base
-# --------------------------------------------------
-
-class ChainedSelectWidget(ClassAttrMixin, forms.Select):
-    """
-    Base widget for chained location selects.
-    """
-
+class ChainedSelectWidget(forms.Select):
     class Media:
         js = ("django_nepkit/js/address-chaining.js",)
 
 
-# --------------------------------------------------
-# Province / District / Municipality Widgets
-# --------------------------------------------------
-
 class ProvinceSelectWidget(ChainedSelectWidget):
-    css_class = "nepkit-province-select"
-
     def __init__(self, *args, **kwargs):
-        kwargs["attrs"] = self._build_attrs(kwargs.get("attrs"))
+        attrs = kwargs.get("attrs", {})
+        _append_css_class(attrs, "nepkit-province-select")
+        kwargs["attrs"] = attrs
         super().__init__(*args, **kwargs)
 
 
 class DistrictSelectWidget(ChainedSelectWidget):
-    css_class = "nepkit-district-select"
-
     def __init__(self, *args, **kwargs):
-        attrs = self._build_attrs(kwargs.get("attrs"))
-        attrs.setdefault("data-url", reverse_lazy("django_nepkit:district-list"))
+        attrs = kwargs.get("attrs", {})
+        _append_css_class(attrs, "nepkit-district-select")
+        attrs["data-url"] = reverse_lazy("django_nepkit:district-list")
         kwargs["attrs"] = attrs
         super().__init__(*args, **kwargs)
 
 
 class MunicipalitySelectWidget(ChainedSelectWidget):
-    css_class = "nepkit-municipality-select"
-
     def __init__(self, *args, **kwargs):
-        attrs = self._build_attrs(kwargs.get("attrs"))
-        attrs.setdefault("data-url", reverse_lazy("django_nepkit:municipality-list"))
+        attrs = kwargs.get("attrs", {})
+        _append_css_class(attrs, "nepkit-municipality-select")
+        attrs["data-url"] = reverse_lazy("django_nepkit:municipality-list")
         kwargs["attrs"] = attrs
         super().__init__(*args, **kwargs)
 
 
-# --------------------------------------------------
-# Nepali Date Picker
-# --------------------------------------------------
-
-class NepaliDatePickerWidget(ClassAttrMixin, forms.TextInput):
-    """
-    Nepali BS date picker widget.
-    """
-
+class NepaliDatePickerWidget(forms.TextInput):
     input_type = "text"
-    css_class = "nepkit-datepicker"
 
     class Media:
         css = {
@@ -93,14 +59,14 @@ class NepaliDatePickerWidget(ClassAttrMixin, forms.TextInput):
 
     def __init__(self, *args, **kwargs):
         attrs = kwargs.get("attrs", {})
+        # Ensure we don't have vDateField class which triggers Django admin calendar
+        classes = attrs.get("class", "")
+        if "vDateField" in classes:
+            classes = classes.replace("vDateField", "")
 
-        # Remove Django admin default class
-        classes = attrs.get("class", "").replace("vDateField", "").strip()
-        attrs["class"] = classes
-
-        attrs = self._build_attrs(attrs)
-        attrs.setdefault("autocomplete", "off")
-        attrs.setdefault("placeholder", "YYYY-MM-DD")
-
+        attrs["class"] = (classes or "").strip()
+        _append_css_class(attrs, "nepkit-datepicker")
+        attrs["autocomplete"] = "off"
+        attrs["placeholder"] = "YYYY-MM-DD"
         kwargs["attrs"] = attrs
         super().__init__(*args, **kwargs)
