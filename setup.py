@@ -28,7 +28,7 @@ setup(
         "Natural Language :: English",
     ],
     python_requires=">=3.11",
-    packages=find_packages(exclude=("example*", "tests*")),
+    packages=find_packages(exclude=("tests*",)),
     install_requires=[
         "django>=4.2",
         "nepali>=1.1.3",

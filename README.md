@@ -3,7 +3,7 @@
 <div align="center">
 
 <img src="https://img.shields.io/pypi/v/django-nepkit?color=blue&label=PyPI&logo=pypi&logoColor=white" alt="PyPI">
-<img src="https://img.shields.io/badge/Django-4.2%2B-0C4B33?logo=django&logoColor=white" alt="Django">
+<img src="https://img.shields.io/badge/Django-4.2%E2%80%936.0-0C4B33?logo=django&logoColor=white" alt="Django 4.2–6.0">
 <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python">
 <a href="https://github.com/S4NKALP/django-nepkit/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 
