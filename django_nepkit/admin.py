@@ -1,155 +1,174 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+
 from nepali.datetime import nepalidate, nepalidatetime
 
 from django_nepkit.models import NepaliDateField
 
 
-def format_nepali_date(date_value, format_string="%B %d, %Y"):
+# --------------------------------------------------
+# Internal helpers
+# --------------------------------------------------
+
+def _parse_nepali_date(value):
     """
-    Format a nepalidate object with Nepali month names.
-
-    Args:
-        date_value: A nepalidate object or string in YYYY-MM-DD format
-        format_string: strftime format string (default: '%B %d, %Y')
-                      %B = Full month name (Baishak, Jestha, etc.)
-                      %b = Short month name
-                      %d = Day of month
-                      %Y = Year
-
-    Returns:
-        Formatted date string with Nepali month names, or empty string if invalid
+    Normalize string / nepalidate to nepalidate.
     """
+    if value is None:
+        return None
 
-    if date_value is None:
-        return ""
+    if isinstance(value, nepalidate):
+        return value
 
-    try:
-        if isinstance(date_value, str):
-            date_value = nepalidate.strptime(date_value, "%Y-%m-%d")
+    if isinstance(value, str):
+        try:
+            return nepalidate.strptime(value, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return None
 
-        if isinstance(date_value, nepalidate):
-            return date_value.strftime(format_string)
-    except (ValueError, TypeError, AttributeError):
-        pass
-
-    return str(date_value) if date_value else ""
+    return None
 
 
-def format_nepali_datetime(datetime_value, format_string="%B %d, %Y %I:%M %p"):
+def _parse_nepali_datetime(value):
     """
-    Format a nepalidatetime object with Nepali month names.
-
-    Default output uses **12-hour time with AM/PM**.
+    Normalize string / nepalidatetime to nepalidatetime.
     """
-    if datetime_value is None:
-        return ""
+    if value is None:
+        return None
 
-    try:
-        if isinstance(datetime_value, str):
-            datetime_value = nepalidatetime.strptime(
-                datetime_value, "%Y-%m-%d %H:%M:%S"
-            )
+    if isinstance(value, nepalidatetime):
+        return value
 
-        if isinstance(datetime_value, nepalidatetime):
-            return datetime_value.strftime(format_string)
-    except (ValueError, TypeError, AttributeError):
-        pass
+    if isinstance(value, str):
+        try:
+            return nepalidatetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        except (ValueError, TypeError):
+            return None
 
-    return str(datetime_value) if datetime_value else ""
+    return None
 
+
+# --------------------------------------------------
+# Formatting helpers
+# --------------------------------------------------
+
+def format_nepali_date(value, format_string="%B %d, %Y"):
+    """
+    Format a Nepali (BS) date with Nepali month names.
+    """
+    nd = _parse_nepali_date(value)
+    return nd.strftime(format_string) if nd else ""
+
+
+def format_nepali_datetime(value, format_string="%B %d, %Y %I:%M %p"):
+    """
+    Format a Nepali (BS) datetime (12-hour format by default).
+    """
+    ndt = _parse_nepali_datetime(value)
+    return ndt.strftime(format_string) if ndt else ""
+
+
+# --------------------------------------------------
+# Admin List Filter (BS Year)
+# --------------------------------------------------
 
 class NepaliDateFilter(admin.FieldListFilter):
     """
-    A list filter for NepaliDateField to filter by BS Year.
+    Admin list filter for NepaliDateField by BS year.
     """
 
+    title = _("Nepali Date (Year)")
+
     def __init__(self, field, request, params, model, model_admin, field_path):
+        self.field_path = field_path
         self.parameter_name = f"{field_path}_bs_year"
         super().__init__(field, request, params, model, model_admin, field_path)
-        self.title = _("Nepali Date (Year)")
 
     def expected_parameters(self):
         return [self.parameter_name]
 
+    def _year_choices(self):
+        current_year = nepalidate.today().year
+        return range(current_year - 10, current_year + 2)
+
     def choices(self, changelist):
         yield {
-            "selected": self.used_parameters.get(self.parameter_name) is None,
+            "selected": self.parameter_name not in self.used_parameters,
             "query_string": changelist.get_query_string(remove=[self.parameter_name]),
             "display": _("All"),
         }
-        current_year = nepalidate.today().year
-        for year in range(current_year - 10, current_year + 2):
+
+        for year in self._year_choices():
             yield {
                 "selected": self.used_parameters.get(self.parameter_name) == str(year),
                 "query_string": changelist.get_query_string(
-                    {self.parameter_name: str(year)}
+                    {self.parameter_name: year}
                 ),
-                "display": str(year),
+                "display": year,
             }
 
     def queryset(self, request, queryset):
         value = self.used_parameters.get(self.parameter_name)
-        if value:
+        if not value:
+            return queryset
+
+        try:
             year = int(value)
-            # Convert BS year range to AD date range
-            start_date_bs = nepalidate(year, 1, 1)
-            # Find last day of the year. Some BS years end on the 30th,
-            # so we try 31 first and then fall back to 30 if that date
-            # is not valid.
+        except (TypeError, ValueError):
+            return queryset
+
+        start_bs = nepalidate(year, 1, 1)
+
+        # BS year length varies (30/31 days)
+        for last_day in (31, 30):
             try:
-                end_date_bs = nepalidate(year, 12, 31)
+                end_bs = nepalidate(year, 12, last_day)
+                break
             except ValueError:
-                end_date_bs = nepalidate(year, 12, 30)
+                continue
 
-            start_date_ad = start_date_bs.to_date()
-            end_date_ad = end_date_bs.to_date()
+        return queryset.filter(
+            **{
+                f"{self.field_path}__range": (
+                    start_bs.to_date(),
+                    end_bs.to_date(),
+                )
+            }
+        )
 
-            return queryset.filter(
-                **{f"{self.field_path}__range": (start_date_ad, end_date_ad)}
-            )
-        return queryset
 
-
+# Register filter automatically for NepaliDateField
 admin.FieldListFilter.register(
-    lambda f: isinstance(f, NepaliDateField), NepaliDateFilter, take_priority=True
+    lambda f: isinstance(f, NepaliDateField),
+    NepaliDateFilter,
+    take_priority=True,
 )
 
 
+# --------------------------------------------------
+# Admin mixins
+# --------------------------------------------------
+
 class NepaliAdminMixin:
     """
-    Mixin for Django admin classes that provides Nepali date utilities.
-    Makes format_nepali_date and NepaliDateFilter available without explicit imports.
+    Adds Nepali date formatting helpers to admin classes.
     """
 
-    def format_nepali_date(self, date_value, format_string="%B %d, %Y"):
-        """
-        Format a nepalidate object with Nepali month names.
-        Available as a method on admin classes using this mixin.
-        """
-        return format_nepali_date(date_value, format_string)
-
-    def format_nepali_datetime(
-        self, datetime_value, format_string="%B %d, %Y %I:%M %p"
-    ):
-        return format_nepali_datetime(datetime_value, format_string)
+    format_nepali_date = staticmethod(format_nepali_date)
+    format_nepali_datetime = staticmethod(format_nepali_datetime)
 
 
 class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
     """
-    Base ModelAdmin class with Nepali date utilities built-in.
-    Use this instead of admin.ModelAdmin to have format_nepali_date available.
+    Base ModelAdmin with Nepali utilities.
 
     Example:
-        from django_nepkit import NepaliModelAdmin, NepaliDateFilter
-
         @admin.register(MyModel)
         class MyModelAdmin(NepaliModelAdmin):
-            list_filter = (('date_field', NepaliDateFilter),)
+            list_filter = (('date_bs', NepaliDateFilter),)
 
-            def display_date(self, obj):
-                return self.format_nepali_date(obj.date_field)
+            def date_display(self, obj):
+                return self.format_nepali_date(obj.date_bs)
     """
 
-    # Make NepaliDateFilter available as a class attribute
     NepaliDateFilter = NepaliDateFilter

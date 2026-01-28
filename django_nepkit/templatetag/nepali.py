@@ -1,67 +1,100 @@
 import datetime
 
 from django import template
+from django.utils.safestring import mark_safe
+
 from nepali.datetime import nepalidate, nepalihumanize
 from nepali.number import nepalinumber
+
 
 register = template.Library()
 
 
-@register.filter
+# --------------------------------------------------
+# Internal helpers
+# --------------------------------------------------
+
+def _to_nepali_date(value):
+    """
+    Normalize AD date/datetime or BS date to nepalidate.
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, nepalidate):
+        return value
+
+    if isinstance(value, (datetime.date, datetime.datetime)):
+        return nepalidate.from_date(value)
+
+    return None
+
+
+# --------------------------------------------------
+# Date filters
+# --------------------------------------------------
+
+@register.filter(is_safe=True)
 def nepali_date(value, format_str="%Y-%m-%d"):
     """
-    Formats a date or datetime object into a Nepali date string.
+    Format a date/datetime as Nepali (BS) date.
     """
-    if value is None:
+    nd = _to_nepali_date(value)
+    if not nd:
         return ""
 
-    if isinstance(value, (datetime.datetime, datetime.date)):
-        value = nepalidate.from_date(value)
-
-    if hasattr(value, "strftime"):
-        return value.strftime(format_str)
-    return value
+    return nd.strftime(format_str)
 
 
-@register.filter
+@register.filter(is_safe=True)
 def nepali_date_ne(value, format_str="%Y-%m-%d"):
     """
-    Formats a date or datetime object into a Nepali date string (Devanagari).
+    Format a date/datetime as Nepali (BS) date in Devanagari.
     """
-    if value is None:
+    nd = _to_nepali_date(value)
+    if not nd:
         return ""
 
-    if isinstance(value, (datetime.datetime, datetime.date)):
-        value = nepalidate.from_date(value)
-
-    if hasattr(value, "strftime_ne"):
-        return value.strftime_ne(format_str)
-    return value
+    return nd.strftime_ne(format_str)
 
 
-@register.filter
+# --------------------------------------------------
+# Number filter
+# --------------------------------------------------
+
+@register.filter(is_safe=True)
 def nepali_number(value):
     """
-    Converts a number to Devanagari.
+    Convert a number to Nepali (Devanagari) digits.
     """
-    if value is None:
+    if value in (None, ""):
         return ""
-    return nepalinumber(value).str_ne()
+
+    try:
+        return nepalinumber(value).str_ne()
+    except Exception:
+        return value
 
 
-@register.filter
+# --------------------------------------------------
+# Humanize filter
+# --------------------------------------------------
+
+@register.filter(is_safe=True)
 def nepali_humanize(value, threshold=None, format_str=None):
     """
-    Returns a human-readable "time ago" string in Nepali.
+    Human-readable Nepali time difference.
     """
     if value is None:
         return ""
 
-    # Threshold and format_str are optional
     kwargs = {}
-    if threshold:
+    if threshold is not None:
         kwargs["threshold"] = threshold
-    if format_str:
+    if format_str is not None:
         kwargs["format"] = format_str
 
-    return nepalihumanize(value, **kwargs)
+    try:
+        return nepalihumanize(value, **kwargs)
+    except Exception:
+        return value
