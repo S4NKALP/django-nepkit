@@ -31,3 +31,31 @@ class MunicipalitySelectWidget(ChainedSelectWidget):
         attrs["data-url"] = reverse_lazy("django_nepkit:municipality-list")
         kwargs["attrs"] = attrs
         super().__init__(*args, **kwargs)
+
+
+class NepaliDatePickerWidget(forms.TextInput):
+    input_type = "text"
+
+    class Media:
+        css = {
+            "all": (
+                "https://unpkg.com/nepali-date-picker@2.0.2/dist/nepaliDatePicker.min.css",
+            )
+        }
+        js = (
+            "https://code.jquery.com/jquery-3.5.1.slim.min.js",
+            "https://unpkg.com/nepali-date-picker@2.0.2/dist/nepaliDatePicker.min.js",
+            "django_nepkit/js/nepali-datepicker-init.js",
+        )
+
+    def __init__(self, *args, **kwargs):
+        attrs = kwargs.get("attrs", {})
+        classes = attrs.get("class", "")
+        if "vDateField" in classes:
+            classes = classes.replace("vDateField", "")
+
+        attrs["class"] = (classes + " nepkit-datepicker").strip()
+        attrs["autocomplete"] = "off"
+        attrs["placeholder"] = "YYYY-MM-DD"
+        kwargs["attrs"] = attrs
+        super().__init__(*args, **kwargs)
