@@ -59,3 +59,7 @@ class MunicipalityField(models.CharField):
         defaults = {"widget": MunicipalitySelectWidget}
         defaults.update(kwargs)
         return super().formfield(**defaults)
+
+
+class NepaliTimeField(models.TimeField):
+    description = _("Nepali Time")
