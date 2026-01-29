@@ -64,7 +64,7 @@ pip install "django-nepkit[drf]"
 
 - Python `>=3.11`
 - Django `>=4.2`
-- `nepali>=1.1.3`
+- nepali `>=1.1.3`
 
 ---
 
@@ -295,8 +295,8 @@ Contributions are welcome. If you find a bug or want an improvement, please open
 Clone the repo and install dependencies (this project uses `uv`):
 
 ```bash
-git clone <your-fork-url>
-cd prod-django-nepkit
+git clone https://github.com/S4NKALP/django-nepkit
+cd django-nepkit
 uv sync
 ```
 
