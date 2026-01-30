@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "django_nepkit",
+    "django_nepkit.tests",
 ]
 
 SECRET_KEY = "test-secret-key-for-django-nepkit"

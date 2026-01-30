@@ -24,4 +24,4 @@ def test_admin_currency_formatting():
 
     # Test the formatter directly
     obj = MockModel(amount=1234567)
-    assert admin.format_nepali_currency(obj.amount) == "Rs. 12,34,567"
+    assert admin.format_nepali_currency(obj.amount) == "Rs. 12,34,567.00"
