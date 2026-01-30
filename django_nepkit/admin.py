@@ -3,7 +3,11 @@ from django.utils.translation import gettext_lazy as _
 from nepali.datetime import nepalidate, nepalidatetime
 
 from django_nepkit.conf import nepkit_settings
-from django_nepkit.models import NepaliDateField, NepaliDateTimeField, NepaliCurrencyField
+from django_nepkit.models import (
+    NepaliDateField,
+    NepaliDateTimeField,
+    NepaliCurrencyField,
+)
 from django_nepkit.utils import (
     try_parse_nepali_date,
     try_parse_nepali_datetime,
