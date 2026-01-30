@@ -14,7 +14,7 @@
 <body>
     <h1>Address Normalization Demo</h1>
     <p>Enter an address string to extract Province, District, and Municipality.</p>
-    
+
     <form hx-get="{% url 'demo:address-normalize' %}" hx-target="#result-area" hx-trigger="keyup changed delay:300ms from:#address-input">
         <div class="form-group">
             <label for="address-input">Address String:</label>
