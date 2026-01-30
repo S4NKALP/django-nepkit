@@ -45,64 +45,62 @@
         if (!inputs || !inputs.length) return;
 
         inputs.forEach(function (el) {
+            var options = {
+                dateFormat: 'YYYY-MM-DD',
+                closeOnDateSelect: true
+            };
+
+            // Use Devanagari if data-ne attribute is present
+            if (el.dataset.ne === 'true') {
+                options.unicodeDate = true;
+            }
+
             // Nepali Datepicker v5 exposes `element.NepaliDatePicker(options)`
             if (typeof el.NepaliDatePicker === 'function') {
-                el.NepaliDatePicker({
-                    dateFormat: 'YYYY-MM-DD'
-                });
+                el.NepaliDatePicker(options);
                 el.classList.add('nepali-datepicker-initialized');
-
-                // Ensure theme is applied when the picker is actually shown.
-                // (The plugin often creates/inserts DOM on focus.)
-                var applySoon = function () {
-                    // Run twice: once immediately, once after paint.
-                    applyThemeToDatepickerContainers();
-                    window.setTimeout(applyThemeToDatepickerContainers, 0);
-                };
-
-                el.addEventListener('focus', applySoon);
-                el.addEventListener('click', applySoon);
             }
-        });
-    }
-
-    // Initialize on page load
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initNepaliDatePickers);
-    } else {
-        initNepaliDatePickers();
-    }
-
-    // Keep in sync if system theme changes (fallback path)
-    if (window.matchMedia) {
-        try {
-            var mql = window.matchMedia('(prefers-color-scheme: dark)');
-            if (mql && typeof mql.addEventListener === 'function') {
-                mql.addEventListener('change', applyThemeToDatepickerContainers);
-            } else if (mql && typeof mql.addListener === 'function') {
-                mql.addListener(applyThemeToDatepickerContainers);
+            // Fallback for jQuery plugin (v2.0.2)
+            else if (typeof window.jQuery !== 'undefined' && typeof window.jQuery(el).nepaliDatePicker === 'function') {
+                window.jQuery(el).nepaliDatePicker(options);
+                el.classList.add('nepali-datepicker-initialized');
             }
-        } catch (e) {
-            // ignore
-        }
-    }
 
-    // Re-initialize when Django admin adds inlines dynamically
-    if (typeof django !== 'undefined' && django.jQuery) {
-        django.jQuery(document).on('formset:added', function () {
-            initNepaliDatePickers();
+            // Ensure theme is applied when the picker is actually shown.
+            // (The plugin often creates/inserts DOM on focus.)
+            var applySoon = function () {
+                // Run twice: once immediately, once after paint.
+                applyThemeToDatepickerContainers();
+                window.setTimeout(applyThemeToDatepickerContainers, 0);
+            };
+
+            el.addEventListener('focus', applySoon);
+            el.addEventListener('click', applySoon);
         });
     }
 
     // Also listen for DOM changes (admin popups/other dynamic content)
-    if (typeof MutationObserver !== 'undefined') {
-        var observer = new MutationObserver(function () {
+    function initObserver() {
+        if (typeof MutationObserver !== 'undefined' && document.body) {
+            var observer = new MutationObserver(function () {
+                initNepaliDatePickers();
+                applyThemeToDatepickerContainers();
+            });
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }
+    }
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
             initNepaliDatePickers();
-            applyThemeToDatepickerContainers();
+            initObserver();
         });
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+    } else {
+        initNepaliDatePickers();
+        initObserver();
     }
 })();

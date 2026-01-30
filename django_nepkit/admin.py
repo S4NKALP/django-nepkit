@@ -2,66 +2,52 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from nepali.datetime import nepalidate, nepalidatetime
 
-from django_nepkit.models import NepaliDateField
+from django_nepkit.models import NepaliDateField, NepaliDateTimeField
 from django_nepkit.utils import (
     try_parse_nepali_date,
     try_parse_nepali_datetime,
 )
 
 
-def format_nepali_date(date_value, format_string="%B %d, %Y"):
+def _format_nepali_common(value, try_parse_func, format_string, ne, cls_type):
+    """Internal helper for formatting Nepali objects."""
+    if value is None:
+        return ""
+
+    try:
+        parsed = try_parse_func(value)
+        if parsed is not None:
+            if ne and hasattr(parsed, "strftime_ne"):
+                return parsed.strftime_ne(format_string)
+            return parsed.strftime(format_string)
+        if isinstance(value, cls_type):
+            if ne and hasattr(value, "strftime_ne"):
+                return value.strftime_ne(format_string)
+            return value.strftime(format_string)
+    except (ValueError, TypeError, AttributeError):
+        pass
+
+    return str(value) if value else ""
+
+
+def format_nepali_date(date_value, format_string="%B %d, %Y", ne=False):
     """
     Format a nepalidate object with Nepali month names.
-
-    Args:
-        date_value: A nepalidate object or string in YYYY-MM-DD format
-        format_string: strftime format string (default: '%B %d, %Y')
-                      %B = Full month name (Baishak, Jestha, etc.)
-                      %b = Short month name
-                      %d = Day of month
-                      %Y = Year
-
-    Returns:
-        Formatted date string with Nepali month names, or empty string if invalid
     """
-    if date_value is None:
-        return ""
-
-    try:
-        parsed = try_parse_nepali_date(date_value)
-        if parsed is not None:
-            return parsed.strftime(format_string)
-        if isinstance(date_value, nepalidate):
-            return date_value.strftime(
-                format_string
-            )  # defensive; should be covered above
-    except (ValueError, TypeError, AttributeError):
-        pass
-
-    return str(date_value) if date_value else ""
+    return _format_nepali_common(
+        date_value, try_parse_nepali_date, format_string, ne, nepalidate
+    )
 
 
-def format_nepali_datetime(datetime_value, format_string="%B %d, %Y %I:%M %p"):
+def format_nepali_datetime(
+    datetime_value, format_string="%B %d, %Y %I:%M %p", ne=False
+):
     """
     Format a nepalidatetime object with Nepali month names.
-
-    Default output uses **12-hour time with AM/PM**.
     """
-    if datetime_value is None:
-        return ""
-
-    try:
-        parsed = try_parse_nepali_datetime(datetime_value)
-        if parsed is not None:
-            return parsed.strftime(format_string)
-        if isinstance(datetime_value, nepalidatetime):
-            return datetime_value.strftime(
-                format_string
-            )  # defensive; should be covered above
-    except (ValueError, TypeError, AttributeError):
-        pass
-
-    return str(datetime_value) if datetime_value else ""
+    return _format_nepali_common(
+        datetime_value, try_parse_nepali_datetime, format_string, ne, nepalidatetime
+    )
 
 
 class NepaliDateFilter(admin.FieldListFilter):
@@ -130,37 +116,139 @@ class NepaliAdminMixin:
     Makes format_nepali_date and NepaliDateFilter available without explicit imports.
     """
 
-    def format_nepali_date(self, date_value, format_string="%B %d, %Y"):
+    def _get_field_ne_setting(self, field_name):
+        """
+        Get the 'ne' setting from a model field.
+
+        Args:
+            field_name: Name of the field in the model
+
+        Returns:
+            True if field has ne=True, False otherwise
+        """
+        if not hasattr(self, "model"):
+            return False
+
+        try:
+            field = self.model._meta.get_field(field_name)
+            if hasattr(field, "ne"):
+                return field.ne
+        except (AttributeError, LookupError):
+            pass
+
+        return False
+
+    def format_nepali_date(
+        self, date_value, format_string="%B %d, %Y", ne=None, field_name=None
+    ):
         """
         Format a nepalidate object with Nepali month names.
         Available as a method on admin classes using this mixin.
+
+        Args:
+            date_value: A nepalidate object or string
+            format_string: strftime format string
+            ne: If True, format using Devanagari script. If None, auto-detect from field (default: None)
+            field_name: Name of the field to auto-detect 'ne' setting from (optional)
         """
-        return format_nepali_date(date_value, format_string)
+        # Auto-detect 'ne' from field if not explicitly provided
+        if ne is None and field_name:
+            ne = self._get_field_ne_setting(field_name)
+        elif ne is None:
+            ne = False
+
+        return format_nepali_date(date_value, format_string, ne=ne)
 
     def format_nepali_datetime(
-        self, datetime_value, format_string="%B %d, %Y %I:%M %p"
+        self,
+        datetime_value,
+        format_string="%B %d, %Y %I:%M %p",
+        ne=None,
+        field_name=None,
     ):
-        return format_nepali_datetime(datetime_value, format_string)
+        """
+        Format a nepalidatetime object with Nepali month names.
+
+        Args:
+            datetime_value: A nepalidatetime object or string
+            format_string: strftime format string
+            ne: If True, format using Devanagari script. If None, auto-detect from field (default: None)
+            field_name: Name of the field to auto-detect 'ne' setting from (optional)
+        """
+        # Auto-detect 'ne' from field if not explicitly provided
+        if ne is None and field_name:
+            ne = self._get_field_ne_setting(field_name)
+        elif ne is None:
+            ne = False
+
+        return format_nepali_datetime(datetime_value, format_string, ne=ne)
 
 
 class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
     """
     Base ModelAdmin class with Nepali date utilities built-in.
-    Use this instead of admin.ModelAdmin to have format_nepali_date available.
+    NepaliDateField and NepaliDateTimeField in list_display are automatically
+    formatted (using the field's ne setting). No manual display methods needed.
 
     Example:
         from django_nepkit import NepaliModelAdmin, NepaliDateFilter
 
         @admin.register(MyModel)
         class MyModelAdmin(NepaliModelAdmin):
-            list_filter = (('date_field', NepaliDateFilter),)
-
-            def display_date(self, obj):
-                return self.format_nepali_date(obj.date_field)
+            list_display = ("name", "birth_date", "created_at")  # auto-formatted
+            list_filter = (("birth_date", NepaliDateFilter),)
     """
 
     # Make NepaliDateFilter available as a class attribute
     NepaliDateFilter = NepaliDateFilter
+
+    def _make_nepali_display(self, field_name, formatter_method):
+        """Generic helper to return a callable that formats a Nepali field for list_display."""
+        admin_instance = self
+        try:
+            field = self.model._meta.get_field(field_name)
+            short_description = getattr(
+                field, "verbose_name", field_name.replace("_", " ").title()
+            )
+        except Exception:
+            short_description = field_name.replace("_", " ").title()
+
+        def display(obj):
+            val = getattr(obj, field_name, None)
+            if val is None:
+                return admin_instance.get_empty_value_display()
+            # Call the passed formatter method (bound to self)
+            return formatter_method(val, field_name=field_name)
+
+        display.short_description = short_description
+        display.admin_order_field = field_name
+        return display
+
+    def _make_nepali_date_display(self, field_name):
+        return self._make_nepali_display(field_name, self.format_nepali_date)
+
+    def _make_nepali_datetime_display(self, field_name):
+        return self._make_nepali_display(field_name, self.format_nepali_datetime)
+
+    def get_list_display(self, request):
+        list_display = super().get_list_display(request)
+        result = []
+        for item in list_display:
+            if not isinstance(item, str):
+                result.append(item)
+                continue
+            try:
+                field = self.model._meta.get_field(item)
+                if isinstance(field, NepaliDateField):
+                    result.append(self._make_nepali_date_display(item))
+                    continue
+                if isinstance(field, NepaliDateTimeField):
+                    result.append(self._make_nepali_datetime_display(item))
+                    continue
+            except Exception:
+                pass
+            result.append(item)
+        return result
 
     # Ensure admin forms render Nepali fields with the proper widget,
     # even if a project doesn't provide custom ModelForms.
@@ -175,7 +263,13 @@ class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
             return super().formfield_for_dbfield(db_field, request, **kwargs)
 
         if isinstance(db_field, (NepaliDateField, NepaliDateTimeField)):
-            kwargs.setdefault("widget", NepaliDatePickerWidget)
+            # Pass ne/en parameters from field to widget if they exist
+            widget_kwargs = {}
+            if hasattr(db_field, "ne"):
+                widget_kwargs["ne"] = db_field.ne
+            if hasattr(db_field, "en"):
+                widget_kwargs["en"] = db_field.en
+            kwargs.setdefault("widget", NepaliDatePickerWidget(**widget_kwargs))
 
         return super().formfield_for_dbfield(db_field, request, **kwargs)
 

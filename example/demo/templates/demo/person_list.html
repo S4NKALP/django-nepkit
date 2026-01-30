@@ -18,24 +18,32 @@
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Birth Date (BS)</th>
-                <th>Birth Date (Devanagari)</th>
+                <th>Birth Date (NE)</th>
+                <th>Birth Date (EN)</th>
+                <th>Reg Time</th>
                 <th>Phone</th>
-                <th>Province</th>
-                <th>District</th>
-                <th>Municipality</th>
+                <th>Province (NE)</th>
+                <th>Province (EN)</th>
+                <th>District (NE)</th>
+                <th>District (EN)</th>
+                <th>Municipality (NE)</th>
+                <th>Municipality (EN)</th>
             </tr>
         </thead>
         <tbody>
             {% for person in persons %}
             <tr>
                 <td>{{ person.name }}</td>
-                <td>{{ person.birth_date|nepali_date }}</td>
-                <td>{{ person.birth_date|nepali_date_ne }}</td>
+                <td>{{ person.birth_date }}</td>
+                <td>{{ person.birth_date_en }}</td>
+                <td>{{ person.registration_time }}</td>
                 <td>{{ person.phone_number }}</td>
                 <td>{{ person.province }}</td>
+                <td>{{ person.province_en }}</td>
                 <td>{{ person.district }}</td>
+                <td>{{ person.district_en }}</td>
                 <td>{{ person.municipality }}</td>
+                <td>{{ person.municipality_en }}</td>
             </tr>
             {% empty %}
             <tr>

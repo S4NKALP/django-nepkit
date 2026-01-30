@@ -3,75 +3,77 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from nepali.datetime import nepalidate, nepalidatetime
-
+from nepali.locations import districts, provinces
 
 BS_DATE_FORMAT = "%Y-%m-%d"
 BS_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def try_parse_nepali_date(value: Any) -> Optional[nepalidate]:
-    """
-    Best-effort conversion to `nepalidate`.
-
-    - Returns `None` for empty values.
-    - Returns `nepalidate` for valid inputs.
-    - Returns `None` if the value cannot be parsed.
-
-    Callers decide whether to raise, fallback, etc.
-    """
+def _try_parse_nepali(value: Any, cls: Any, fmt: str) -> Any:
+    """Internal helper to parse Nepali date/datetime."""
     if value in (None, ""):
         return None
-    if isinstance(value, nepalidate):
+    if isinstance(value, cls):
         return value
     if isinstance(value, str):
         try:
-            return nepalidate.strptime(value.strip(), BS_DATE_FORMAT)
+            return cls.strptime(value.strip(), fmt)
         except Exception:
             return None
     return None
+
+
+def try_parse_nepali_date(value: Any) -> Optional[nepalidate]:
+    """
+    Best-effort conversion to `nepalidate`.
+    """
+    return _try_parse_nepali(value, nepalidate, BS_DATE_FORMAT)
 
 
 def try_parse_nepali_datetime(value: Any) -> Optional[nepalidatetime]:
     """
     Best-effort conversion to `nepalidatetime`.
-
-    - Returns `None` for empty values.
-    - Returns `nepalidatetime` for valid inputs.
-    - Returns `None` if the value cannot be parsed.
-
-    Callers decide whether to raise, fallback, etc.
     """
-    if value in (None, ""):
-        return None
-    if isinstance(value, nepalidatetime):
-        return value
-    if isinstance(value, str):
-        try:
-            return nepalidatetime.strptime(value.strip(), BS_DATETIME_FORMAT)
-        except Exception:
-            return None
-    return None
+    return _try_parse_nepali(value, nepalidatetime, BS_DATETIME_FORMAT)
 
 
-def get_districts_by_province(province_name):
+def _get_location_children(parent_list, parent_name, child_attr, ne=False):
+    """
+    Internal helper to finding a parent in a list and returning its children (districts/municipalities).
+    """
+    selected_parent = None
+    for p in parent_list:
+        if p.name == parent_name or getattr(p, "name_nepali", None) == parent_name:
+            selected_parent = p
+            break
+
+    if not selected_parent:
+        return []
+
+    children = getattr(selected_parent, child_attr, [])
+
+    if ne:
+        return [
+            {
+                "id": getattr(child, "name_nepali", child.name),
+                "text": getattr(child, "name_nepali", child.name),
+            }
+            for child in children
+        ]
+    else:
+        return [{"id": child.name, "text": child.name} for child in children]
+
+
+def get_districts_by_province(province_name, ne=False, en=True):
     """
     Returns a list of districts in the given province.
     """
-    from nepali.locations import provinces
-
-    selected_province = next((p for p in provinces if p.name == province_name), None)
-    if not selected_province:
-        return []
-    return [{"id": d.name, "text": d.name} for d in selected_province.districts]
+    # Logic note: if ne=True is passed, we shouldn't care about en=True (handled by caller typically)
+    return _get_location_children(provinces, province_name, "districts", ne=ne)
 
 
-def get_municipalities_by_district(district_name):
+def get_municipalities_by_district(district_name, ne=False, en=True):
     """
     Returns a list of municipalities in the given district.
     """
-    from nepali.locations import districts
-
-    selected_district = next((d for d in districts if d.name == district_name), None)
-    if not selected_district:
-        return []
-    return [{"id": m.name, "text": m.name} for m in selected_district.municipalities]
+    return _get_location_children(districts, district_name, "municipalities", ne=ne)

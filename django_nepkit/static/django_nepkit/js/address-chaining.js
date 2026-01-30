@@ -32,7 +32,14 @@
                     return;
                 }
 
-                const url = districtSelect.dataset.url + '?province=' + encodeURIComponent(province);
+                let url = districtSelect.dataset.url + '?province=' + encodeURIComponent(province);
+                // Add ne/en parameters if present in data attributes
+                if (districtSelect.dataset.ne === 'true') {
+                    url += '&ne=true';
+                }
+                if (districtSelect.dataset.en === 'true') {
+                    url += '&en=true';
+                }
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {
@@ -52,7 +59,14 @@
                     return;
                 }
 
-                const url = municipalitySelect.dataset.url + '?district=' + encodeURIComponent(district);
+                let url = municipalitySelect.dataset.url + '?district=' + encodeURIComponent(district);
+                // Add ne/en parameters if present in data attributes
+                if (municipalitySelect.dataset.ne === 'true') {
+                    url += '&ne=true';
+                }
+                if (municipalitySelect.dataset.en === 'true') {
+                    url += '&en=true';
+                }
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {

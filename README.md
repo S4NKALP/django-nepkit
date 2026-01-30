@@ -1,76 +1,37 @@
-# django-nepkit
+# 🇳🇵 django-nepkit
 
-<div align="center">
+[![PyPI version](https://badge.fury.io/py/django-nepkit.svg)](https://badge.fury.io/py/django-nepkit)
+[![Python Versions](https://img.shields.io/pypi/pyversions/django-nepkit.svg)](https://pypi.org/project/django-nepkit/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<img src="https://img.shields.io/pypi/v/django-nepkit?color=blue&label=PyPI&logo=pypi&logoColor=white" alt="PyPI">
-<img src="https://img.shields.io/badge/Django-4.2%E2%80%936.0-0C4B33?logo=django&logoColor=white" alt="Django 4.2–6.0">
-<img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python">
-<a href="https://github.com/S4NKALP/django-nepkit/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+**The essential toolkit for Django developers building for Nepal.**
 
-</div>
-
-
-`django-nepkit` is a lightweight Django utility package for Nepali projects. It provides model fields, validators, and admin helpers for:
-
-- **Bikram Sambat (BS)** date, time, and datetime
-- **Nepali phone number** validation
-- **Chained address selects** (province → district → municipality)
-
-It also includes Django admin enhancements:
-
-- `NepaliModelAdmin` automatically wires the Nepali datepicker
-- `NepaliDateFilter` for filtering BS dates by year
-
-Optional Django REST Framework (DRF) serializer fields are available (install with `django-nepkit[drf]`).
-
-## Notes
-
-- The package depends on [`py-nepali`](https://github.com/opensource-nepal/py-nepali).
-- The date picker UI is implemented from [`sajanm/nepali-date-picker`](https://github.com/sajanm/nepali-date-picker).
+`django-nepkit` handles the specific localization needs of Nepali web applications with elegance and ease. From correct Bikram Sambat (BS) date handling to smart address management and phone validation, we've got you covered.
 
 ---
 
-## Table of Contents
+## ✨ Key Features
 
-- [Installation](#installation)
-- [Requirements](#requirements)
-- [Setup](#setup)
-- [Quick Start](#quick-start)
-- [Model Fields](#model-fields)
-- [Address Fields (Chained Selects)](#address-fields-chained-selects)
-- [Django Admin](#django-admin)
-- [Django REST Framework](#django-rest-framework)
-- [Public API](#public-api)
-- [Contributing](#contributing)
-- [License](#license)
+- **📅 Bikram Sambat (BS) Support**: Full support for Nepali dates and datetimes in models and forms.
+- **📱 Smart Validation**: Built-in validators for Nepali phone numbers.
+- **🗺️ Administrative Locations**: Chained selects for Provinces, Districts, and Municipalities.
+- **🇳🇵 Bilingual Support**: Seamlessly switch between English and Nepali (Devanagari) output for locations and dates.
+- **🔌 Zero-Config Admin**: `NepaliModelAdmin` automatically integrates the Nepali datepicker and formats list displays.
+- **🚀 API Ready**: Optional DRF serializers with Devanagari support.
 
 ---
 
-## Installation
+## 🛠 Installation
+
+Install via pip:
 
 ```bash
 pip install django-nepkit
 ```
 
-### Optional: DRF Serializer Fields
-
-```bash
-pip install "django-nepkit[drf]"
-```
-
----
-
-## Requirements
-
-- Python `>=3.11`
-- Django `>=4.2`
-- nepali `>=1.1.3`
-
----
-
-## Setup
-
 ### Add to `INSTALLED_APPS`
+
+In your `settings.py`:
 
 ```python
 INSTALLED_APPS = [
@@ -82,110 +43,100 @@ INSTALLED_APPS = [
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
+
+### 1. Model Fields
+
+Define your models with Nepali-specific requirements effortlessly.
 
 ```python
-# models.py
 from django.db import models
-from django_nepkit import NepaliDateField, NepaliDateTimeField, NepaliPhoneNumberField
+from django_nepkit import (
+    NepaliDateField,
+    NepaliDateTimeField,
+    NepaliPhoneNumberField
+)
 
-class Person(models.Model):
+class Citizen(models.Model):
     name = models.CharField(max_length=100)
-    birth_date = NepaliDateField()
-    created_at = NepaliDateTimeField(auto_now_add=True)
-    phone_number = NepaliPhoneNumberField()
+
+    # Stores dates as YYYY-MM-DD strings (BS)
+    dob = NepaliDateField()
+
+    # Use ne=True for Devanagari digits/names in forms/admin
+    appointment = NepaliDateTimeField(ne=True)
+
+    # Validates correct Nepali phone patterns
+    phone = NepaliPhoneNumberField()
 ```
 
+### 2. Admin Integration
+
+`NepaliModelAdmin` provides a zero-config experience. It:
+- Automatically attaches the **Nepali Datepicker**.
+- Formats `NepaliDateField` and `NepaliDateTimeField` in `list_display`.
+- Registers `NepaliDateFilter` for easy year-based filtering.
+
 ```python
-# admin.py
 from django.contrib import admin
 from django_nepkit import NepaliModelAdmin
-from .models import Person
+from .models import Citizen
 
-@admin.register(Person)
-class PersonAdmin(NepaliModelAdmin):
-    list_display = ("name", "birth_date", "created_at", "phone_number")
+@admin.register(Citizen)
+class CitizenAdmin(NepaliModelAdmin):
+    list_display = ("name", "dob", "phone")
 ```
 
-`NepaliModelAdmin` automatically loads the Nepali datepicker assets and applies the widget—no custom forms required.
+> [!TIP]
+> If you already have a custom base Admin class, use **`NepaliAdminMixin`** to get all formatting and filter benefits.
 
 ---
 
-## Model Fields
+## 📝 Forms & Widgets
 
-### `NepaliDateField` (BS date)
-
-Stores a BS date in the DB as a string (`YYYY-MM-DD`). In Python, it returns/accepts `nepali.datetime.nepalidate`.
+Need to build a custom form? `django-nepkit` provides specialized fields and widgets.
 
 ```python
-from django_nepkit import NepaliDateField
+from django import forms
+from django_nepkit.forms import NepaliDateFormField, NepaliPhoneNumberFormField
+from django_nepkit.widgets import NepaliDatePickerWidget
 
-class Event(models.Model):
-    event_date = NepaliDateField()
-```
+class RegistrationForm(forms.Form):
+    # Field with built-in validation
+    birth_date = NepaliDateFormField()
 
-**Notes:**
+    # Or apply the widget to a standard field
+    event_date = forms.CharField(
+        widget=NepaliDatePickerWidget(ne=True) # Devanagari support
+    )
 
-- Stored as a string, not SQL DATE
-- Accepts BS strings like `"2081-10-15"`, `nepalidate`, and AD `datetime.date` (converted to BS)
-
----
-
-### `NepaliDateTimeField` (BS datetime)
-
-Stores a BS datetime string (`YYYY-MM-DD HH:MM:SS`) in the DB and uses `nepalidatetime` in Python.
-
-```python
-from django_nepkit import NepaliDateTimeField
-
-class Log(models.Model):
-    created_at = NepaliDateTimeField(auto_now_add=True)
-    updated_at = NepaliDateTimeField(auto_now=True)
+    phone = NepaliPhoneNumberFormField()
 ```
 
 ---
 
-### `NepaliTimeField`
+## 🗺️ Address Management (Chained Selects)
 
-A normal Django `TimeField` for consistency.
+Model Nepal's administrative structure with automatic filtering: Province → District → Municipality.
 
-```python
-from django_nepkit import NepaliTimeField
-
-class Shift(models.Model):
-    start_time = NepaliTimeField()
-```
-
----
-
-### `NepaliPhoneNumberField`
-
-A `CharField` with Nepali phone number validation.
+### Step 1: Define Fields
 
 ```python
-from django_nepkit import NepaliPhoneNumberField
-
-class Contact(models.Model):
-    phone_number = NepaliPhoneNumberField()
-```
-
----
-
-## Address Fields (Chained Selects)
-
-Chained fields: province → district → municipality.
-
-```python
-from django.db import models
 from django_nepkit import ProvinceField, DistrictField, MunicipalityField
 
 class Address(models.Model):
+    # For English names
     province = ProvinceField()
     district = DistrictField()
     municipality = MunicipalityField()
+
+    # For Devanagari (बगती, काठमाडौँ, etc.)
+    # province = ProvinceField(ne=True)
 ```
 
-### URLs required for chaining
+### Step 2: Include URLs (Crucial)
+
+For the chained selects to fetch data dynamically, you **must** include the package URLs in your project's `urls.py`:
 
 ```python
 # urls.py
@@ -199,142 +150,54 @@ urlpatterns = [
 
 ---
 
-## Django Admin
+## 🔌 API Support (Django REST Framework)
 
-### `NepaliModelAdmin`
-
-- Auto-wires datepicker for BS fields
-- Provides `format_nepali_date(...)` and `format_nepali_datetime(...)`
-- Includes `NepaliDateFilter`
-
-```python
-from django.contrib import admin
-from django_nepkit import NepaliModelAdmin
-
-@admin.register(MyModel)
-class MyModelAdmin(NepaliModelAdmin):
-    pass
-```
-
-### `NepaliDateFilter`
-
-Filter `NepaliDateField` by BS year:
-
-```python
-from django_nepkit import NepaliDateFilter, NepaliModelAdmin
-
-@admin.register(MyModel)
-class MyModelAdmin(NepaliModelAdmin):
-    list_filter = (("my_nepali_date_field", NepaliDateFilter),)
-```
-
-**Datepicker assets used:**
-
-- JS: `https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js`
-- CSS: `https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css`
-
----
-
-## Django REST Framework
-
-Install the extra:
-
+Install the optional dependency for serializer fields:
 ```bash
 pip install "django-nepkit[drf]"
 ```
 
-### `NepaliDateSerializerField`
+Use them in your serializers with optional Devanagari (`ne=True`) output:
 
 ```python
 from rest_framework import serializers
 from django_nepkit.serializers import NepaliDateSerializerField
 
-class PersonSerializer(serializers.Serializer):
-    birth_date = NepaliDateSerializerField(format="%Y/%m/%d")
+class CitizenSerializer(serializers.ModelSerializer):
+    # Output: "२०८१-१०-१७" if ne=True
+    dob = NepaliDateSerializerField(format="%Y-%m-%d", ne=True)
+
+    class Meta:
+        model = Citizen
+        fields = "__all__"
 ```
 
-### `NepaliDateTimeSerializerField`
+---
+
+## 🛠️ Utility Functions
+
+Need to format a date in your logic or views?
 
 ```python
-from rest_framework import serializers
-from django_nepkit.serializers import NepaliDateTimeSerializerField
+from django_nepkit import format_nepali_date
 
-class LogSerializer(serializers.Serializer):
-    created_at = NepaliDateTimeSerializerField()
+# Result: "Magh 17, 2081" (or "माघ १७, २०८१" if ne=True)
+formatted = format_nepali_date(my_date, format_string="%B %d, %Y", ne=False)
 ```
 
 ---
 
-## Public API
+## 🤝 Contributing
 
-```python
-from django_nepkit import (
-    NepaliDateField,
-    NepaliTimeField,
-    NepaliDateTimeField,
-    NepaliPhoneNumberField,
-    ProvinceField,
-    DistrictField,
-    MunicipalityField,
-    NepaliDateFilter,
-    NepaliModelAdmin,
-    NepaliAdminMixin,
-)
-```
+We love contributions!
 
-DRF fields live in `django_nepkit.serializers`.
+1.  Clone the repo: `git clone https://github.com/S4NKALP/django-nepkit`
+2.  Install dependencies: `uv sync`
+3.  Run the tests: `uv run pytest`
+4.  Run the example project: `cd example && python manage.py runserver`
 
 ---
 
-## Contributing
+## 📄 License
 
-Contributions are welcome. If you find a bug or want an improvement, please open an issue or submit a pull request.
-
-### Local setup
-
-Clone the repo and install dependencies (this project uses `uv`):
-
-```bash
-git clone https://github.com/S4NKALP/django-nepkit
-cd django-nepkit
-uv sync
-```
-
-### Run the example project
-
-The repository contains an example Django project under `example/`.
-
-```bash
-cd example
-uv run manage.py migrate
-uv run manage.py createsuperuser
-uv run manage.py runserver
-```
-
-### Code quality (recommended before every commit)
-
-Install and run pre-commit:
-
-```bash
-uv run pre-commit install
-uv run pre-commit run --all-files
-```
-
-You can also run Ruff directly:
-
-```bash
-uv run ruff format .
-uv run ruff check .
-```
-
-### Pull request guidelines
-
-- Keep PRs focused and small when possible.
-- Update `README.md` if behavior or public API changes.
-- If you add a new feature, include a minimal example and tests if applicable.
-
----
-
-## License
-
-MIT. See [`LICENSE`](LICENSE).
+MIT License. Made with ❤️ for the Nepali Django community.

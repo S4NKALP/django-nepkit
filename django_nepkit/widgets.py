@@ -1,5 +1,6 @@
 from django import forms
 from django.urls import reverse_lazy
+from nepali.datetime import nepalidate
 
 
 def _append_css_class(attrs, class_name: str):
@@ -11,62 +12,88 @@ def _append_css_class(attrs, class_name: str):
     return attrs
 
 
+class NepaliWidgetMixin:
+    def __init__(self, *args, **kwargs):
+        self.ne = kwargs.pop("ne", False)
+        en_value = kwargs.pop("en", True)
+        if self.ne:
+            self.en = False
+        else:
+            self.en = en_value
+
+        attrs = kwargs.get("attrs", {}) or {}
+
+        # Add data attributes
+        if self.ne:
+            attrs["data-ne"] = "true"
+        if self.en:
+            attrs["data-en"] = "true"
+
+        # Hook for subclasses to add specific classes/attrs
+        self._configure_attrs(attrs)
+
+        kwargs["attrs"] = attrs
+        super().__init__(*args, **kwargs)
+
+    def _configure_attrs(self, attrs):
+        """Override in subclasses to add specific classes or attributes."""
+        pass
+
+
 class ChainedSelectWidget(forms.Select):
     class Media:
         js = ("django_nepkit/js/address-chaining.js",)
 
 
-class ProvinceSelectWidget(ChainedSelectWidget):
-    def __init__(self, *args, **kwargs):
-        attrs = kwargs.get("attrs", {})
+class ProvinceSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
+    def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-province-select")
-        kwargs["attrs"] = attrs
-        super().__init__(*args, **kwargs)
 
 
-class DistrictSelectWidget(ChainedSelectWidget):
-    def __init__(self, *args, **kwargs):
-        attrs = kwargs.get("attrs", {})
+class DistrictSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
+    def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-district-select")
         attrs["data-url"] = reverse_lazy("django_nepkit:district-list")
-        kwargs["attrs"] = attrs
-        super().__init__(*args, **kwargs)
 
 
-class MunicipalitySelectWidget(ChainedSelectWidget):
-    def __init__(self, *args, **kwargs):
-        attrs = kwargs.get("attrs", {})
+class MunicipalitySelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
+    def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-municipality-select")
         attrs["data-url"] = reverse_lazy("django_nepkit:municipality-list")
-        kwargs["attrs"] = attrs
-        super().__init__(*args, **kwargs)
 
 
-class NepaliDatePickerWidget(forms.TextInput):
+class NepaliDatePickerWidget(NepaliWidgetMixin, forms.TextInput):
     input_type = "text"
 
     class Media:
         css = {
             "all": (
-                "https://unpkg.com/nepali-date-picker@2.0.2/dist/nepaliDatePicker.min.css",
+                "https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/css/nepali.datepicker.v5.0.6.min.css",
             )
         }
         js = (
             "https://code.jquery.com/jquery-3.5.1.slim.min.js",
-            "https://unpkg.com/nepali-date-picker@2.0.2/dist/nepaliDatePicker.min.js",
+            "https://nepalidatepicker.sajanmaharjan.com.np/v5/nepali.datepicker/js/nepali.datepicker.v5.0.6.min.js",
             "django_nepkit/js/nepali-datepicker-init.js",
         )
 
-    def __init__(self, *args, **kwargs):
-        attrs = kwargs.get("attrs", {})
-        # Ensure we don't have vDateField class which triggers Django admin calendar
+    def _configure_attrs(self, attrs):
+        # Clean up Django admin class if present
         classes = attrs.get("class", "")
         if "vDateField" in classes:
             classes = classes.replace("vDateField", "")
+        attrs["class"] = classes
 
-        attrs["class"] = (classes or "").strip()
         _append_css_class(attrs, "nepkit-datepicker")
         attrs["autocomplete"] = "off"
         attrs["placeholder"] = "YYYY-MM-DD"
-        kwargs["attrs"] = attrs
-        super().__init__(*args, **kwargs)
+
+    def format_value(self, value):
+        if value is None:
+            return None
+
+        if self.ne and isinstance(value, nepalidate):
+            if hasattr(value, "strftime_ne"):
+                return value.strftime_ne("%Y-%m-%d")
+
+        return super().format_value(value)

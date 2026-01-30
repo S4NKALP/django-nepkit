@@ -25,6 +25,8 @@ class BaseNepaliBSField(serializers.Field):
 
     - **Input**: BS string, or an already-parsed `nepalidate`/`nepalidatetime`
     - **Output**: formatted BS string (configurable)
+    - **ne**: If True, output uses Devanagari script (default: False)
+    - **en**: If True, output uses English (default: True). When ne=True, en is False.
     """
 
     format: str = ""
@@ -35,14 +37,28 @@ class BaseNepaliBSField(serializers.Field):
         "invalid_type": "Invalid type. Expected a string.",
     }
 
-    def __init__(self, *, format: Optional[str] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *,
+        format: Optional[str] = None,
+        ne: bool = False,
+        en: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """
         Args:
             format: Optional `strftime` format used for representation.
                     If not provided, uses the class default.
+            ne: If True, output in Devanagari script (default: False).
+            en: If True, output in English (default: True). When ne=True, en is False.
         """
         if format is not None:
             self.format = format
+        self.ne = ne
+        if self.ne:
+            self.en = False
+        else:
+            self.en = en
         super().__init__(**kwargs)
 
     def _parse(self, value: str):
@@ -52,18 +68,24 @@ class BaseNepaliBSField(serializers.Field):
             return try_parse_nepali_datetime(value)
         return None
 
+    def _format_value(self, value: Any) -> str:
+        """Format value using strftime or strftime_ne (Devanagari) based on self.ne."""
+        if self.ne and hasattr(value, "strftime_ne"):
+            return value.strftime_ne(self.format)  # type: ignore[attr-defined]
+        return value.strftime(self.format)  # type: ignore[attr-defined]
+
     def to_representation(self, value: Any) -> Optional[str]:
         if value is None:
             return None
 
         if isinstance(value, self.nepali_type):
-            return value.strftime(self.format)  # type: ignore[attr-defined]
+            return self._format_value(value)
 
         # If DB returns string, try to normalize it.
         if isinstance(value, str):
             parsed = self._parse(value)
             if parsed is not None:
-                return parsed.strftime(self.format)  # type: ignore[attr-defined]
+                return self._format_value(parsed)
 
         # Fallback: best-effort stringify (keeps behavior non-breaking)
         return str(value)
@@ -92,7 +114,9 @@ class BaseNepaliBSField(serializers.Field):
 
 class NepaliDateSerializerField(BaseNepaliBSField):
     """
-    DRF field for Nepali BS Date (YYYY-MM-DD)
+    DRF field for Nepali BS Date (YYYY-MM-DD).
+
+    Pass ne=True for Devanagari output; default is English.
     """
 
     format = "%Y-%m-%d"
@@ -106,7 +130,9 @@ class NepaliDateSerializerField(BaseNepaliBSField):
 
 class NepaliDateTimeSerializerField(BaseNepaliBSField):
     """
-    DRF field for Nepali BS DateTime (YYYY-MM-DD HH:MM:SS)
+    DRF field for Nepali BS DateTime (YYYY-MM-DD HH:MM:SS).
+
+    Pass ne=True for Devanagari output; default is English.
     """
 
     format = "%Y-%m-%d %H:%M:%S"

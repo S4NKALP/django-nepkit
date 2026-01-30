@@ -6,6 +6,7 @@ from nepali.datetime import nepalidate
 
 from django_nepkit.utils import try_parse_nepali_date
 from django_nepkit.validators import validate_nepali_phone_number
+from django_nepkit.widgets import NepaliDatePickerWidget
 
 
 class NepaliDateFormField(forms.DateField):
@@ -13,12 +14,12 @@ class NepaliDateFormField(forms.DateField):
     A Django Form Field for Nepali Date (Bikram Sambat).
     """
 
-    from .widgets import NepaliDatePickerWidget
-
     widget = NepaliDatePickerWidget
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("max_length", None)
+        # Django admin may pass empty_value; base Field does not accept it
+        kwargs.pop("empty_value", None)
         super().__init__(*args, **kwargs)
 
     def to_python(self, value):
