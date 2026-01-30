@@ -12,33 +12,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.12', '3.13']
         django-version: ['4.2', '5.0', '5.1', '6.0']
-        
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
         enable-cache: true
-    
+
     - name: Install dependencies
       run: |
         uv sync
         uv pip install "Django==${{ matrix.django-version }}.*"
-    
+
     - name: Run tests with coverage
       env:
         DJANGO_SETTINGS_MODULE: django_nepkit.tests.settings
       run: |
         uv run pytest django_nepkit/tests/ --cov=django_nepkit --cov-report=xml --cov-report=term
-    
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
@@ -46,7 +46,7 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
-    
+
     - name: Run linting
       run: |
         uv run ruff check django_nepkit/
@@ -55,22 +55,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
-    
+        python-version: '3.12'
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
-    
+
     - name: Build package
       run: |
         uv build
-    
+
     - name: Check package
       run: |
         uv run twine check dist/*

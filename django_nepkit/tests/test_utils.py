@@ -1,7 +1,7 @@
 """
 Tests for django-nepkit utility functions.
 """
-import pytest
+
 from nepali.datetime import nepalidate, nepalidatetime
 
 from django_nepkit.utils import (
@@ -16,7 +16,7 @@ class TestDateParsing:
     def test_parse_nepali_date_from_string(self):
         """Test parsing BS date from string."""
         result = try_parse_nepali_date("2081-01-15")
-        
+
         assert result is not None
         assert isinstance(result, nepalidate)
         assert result.year == 2081
@@ -30,7 +30,7 @@ class TestDateParsing:
             "15/01/2081",
             "15-01-2081",
         ]
-        
+
         for date_str in formats:
             result = try_parse_nepali_date(date_str)
             assert result is not None
@@ -40,7 +40,7 @@ class TestDateParsing:
         """Test that passing a nepalidate object returns it unchanged."""
         date_obj = nepalidate(2081, 1, 15)
         result = try_parse_nepali_date(date_obj)
-        
+
         assert result is date_obj
 
     def test_parse_nepali_date_none(self):
@@ -65,7 +65,7 @@ class TestDateTimeParsing:
     def test_parse_nepali_datetime_from_string(self):
         """Test parsing BS datetime from string."""
         result = try_parse_nepali_datetime("2081-01-15 14:30:00")
-        
+
         assert result is not None
         assert isinstance(result, nepalidatetime)
         assert result.year == 2081
@@ -78,7 +78,7 @@ class TestDateTimeParsing:
         """Test that passing a nepalidatetime object returns it unchanged."""
         dt_obj = nepalidatetime(2081, 1, 15, 14, 30, 0)
         result = try_parse_nepali_datetime(dt_obj)
-        
+
         assert result is dt_obj
 
     def test_parse_nepali_datetime_none(self):

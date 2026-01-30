@@ -1,6 +1,7 @@
 """
 Tests for django-nepkit validators.
 """
+
 import pytest
 from django.core.exceptions import ValidationError
 
@@ -19,7 +20,7 @@ class TestPhoneNumberValidator:
             "9861234567",
             "9741234567",
         ]
-        
+
         for number in valid_mobiles:
             # Should not raise ValidationError
             validate_nepali_phone_number(number)
@@ -31,7 +32,7 @@ class TestPhoneNumberValidator:
             "015123456",
             "016123456",
         ]
-        
+
         for number in valid_landlines:
             # Should not raise ValidationError
             validate_nepali_phone_number(number)
