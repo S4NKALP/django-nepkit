@@ -5,7 +5,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("demo", "0002_alter_person_district_en_and_more"),
     ]

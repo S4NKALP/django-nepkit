@@ -45,8 +45,12 @@
         if (!inputs || !inputs.length) return;
 
         inputs.forEach(function (el) {
+            var format = el.dataset.format || 'YYYY-MM-DD';
+            // Convert strftime format to datepicker format
+            format = format.replace(/%Y/g, 'YYYY').replace(/%m/g, 'MM').replace(/%d/g, 'DD');
+
             var options = {
-                dateFormat: 'YYYY-MM-DD',
+                dateFormat: format,
                 closeOnDateSelect: true
             };
 

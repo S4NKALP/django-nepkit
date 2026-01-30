@@ -12,22 +12,43 @@ from django_nepkit import (
 
 class Person(models.Model):
     name = models.CharField(max_length=100)
-    # Date/time fields - now default to English via NEPKIT['DEFAULT_LANGUAGE']
-    birth_date = NepaliDateField()  # Defaults to en=True
-    birth_date_ne = NepaliDateField(ne=True, blank=True, null=True)  # Explicitly Nepali
-    registration_time = NepaliTimeField(auto_now_add=True)  # Defaults to en=True
+    # Dates and times
+    birth_date = NepaliDateField()  # English by default
+    birth_date_ne = NepaliDateField(ne=True, blank=True, null=True)  # Using Devanagari
+    registration_time = NepaliTimeField(auto_now_add=True)  # English digits by default
     phone_number = NepaliPhoneNumberField()
 
-    # Address chaining - now default to English via NEPKIT['DEFAULT_LANGUAGE']
-    province = ProvinceField()  # Defaults to en=True
-    province_ne = ProvinceField(ne=True, blank=True, null=True)  # Explicitly Nepali
-    district = DistrictField()  # Defaults to en=True
-    district_ne = DistrictField(ne=True, blank=True, null=True)  # Explicitly Nepali
-    municipality = MunicipalityField()  # Defaults to en=True
-    municipality_ne = MunicipalityField(ne=True, blank=True, null=True)  # Explicitly Nepali
+    # Location fields
+    province = ProvinceField()  # English names by default
+    province_ne = ProvinceField(ne=True, blank=True, null=True)  # In Devanagari
+    district = DistrictField()
+    district_ne = DistrictField(ne=True, blank=True, null=True)
+    municipality = MunicipalityField()
+    municipality_ne = MunicipalityField(ne=True, blank=True, null=True)
 
-    created_at = NepaliDateTimeField(auto_now_add=True)  # Defaults to en=True
-    updated_at = NepaliDateTimeField(auto_now=True)  # Defaults to en=True
+    created_at = NepaliDateTimeField(auto_now_add=True)
+    updated_at = NepaliDateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Citizen(models.Model):
+    name = models.CharField(max_length=100)
+
+    # Chaining works automatically
+    province = ProvinceField()
+    district = DistrictField()
+    municipality = MunicipalityField()
+
+    def __str__(self):
+        return self.name
+
+
+class AuditedPerson(models.Model):
+    name = models.CharField(max_length=100)
+    birth_date = NepaliDateField()
+    created_at = NepaliDateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name

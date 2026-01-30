@@ -8,10 +8,7 @@ register = template.Library()
 
 
 def _coerce_ad_date_to_bs(value):
-    """
-    Internal helper: if value is AD date/datetime, convert to `nepalidate`.
-    Does NOT attempt to parse strings (keeps template behavior minimal).
-    """
+    """Convert an English (AD) date to a Nepali date."""
     if isinstance(value, datetime.datetime):
         if timezone.is_aware(value):
             value = timezone.localtime(value)
@@ -23,9 +20,7 @@ def _coerce_ad_date_to_bs(value):
 
 @register.filter
 def nepali_date(value, format_str="%Y-%m-%d"):
-    """
-    Formats a date or datetime object into a Nepali date string.
-    """
+    """Format a date as a Nepali string (e.g. 2080-01-01)."""
     if value is None:
         return ""
 
@@ -38,9 +33,7 @@ def nepali_date(value, format_str="%Y-%m-%d"):
 
 @register.filter
 def nepali_date_ne(value, format_str="%Y-%m-%d"):
-    """
-    Formats a date or datetime object into a Nepali date string (Devanagari).
-    """
+    """Format a date using Nepali digits (e.g. २०८०-०१-०१)."""
     if value is None:
         return ""
 
@@ -53,9 +46,7 @@ def nepali_date_ne(value, format_str="%Y-%m-%d"):
 
 @register.filter
 def nepali_number(value):
-    """
-    Converts a number to Devanagari.
-    """
+    """Convert any number to Nepali digits (123 -> १२३)."""
     if value is None:
         return ""
     return nepalinumber(value).str_ne()
@@ -63,9 +54,7 @@ def nepali_number(value):
 
 @register.filter
 def nepali_humanize(value, threshold=None, format_str=None):
-    """
-    Returns a human-readable "time ago" string in Nepali.
-    """
+    """Show 'time ago' in Nepali (like '५ मिनेट अगाडि')."""
     if value is None:
         return ""
 

@@ -9,6 +9,7 @@ from .models import (
 )
 from .admin import (
     NepaliDateFilter,
+    NepaliMonthFilter,
     format_nepali_date,
     format_nepali_datetime,
     NepaliModelAdmin,
@@ -24,6 +25,7 @@ __all__ = [
     "DistrictField",
     "MunicipalityField",
     "NepaliDateFilter",
+    "NepaliMonthFilter",
     "format_nepali_date",
     "format_nepali_datetime",
     "NepaliModelAdmin",

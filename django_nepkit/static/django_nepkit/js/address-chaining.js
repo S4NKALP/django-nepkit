@@ -23,7 +23,7 @@
         const lang = isNepali ? 'ne' : 'en';
         const data = window.NEPKIT_DATA[lang];
         if (!data) return null;
-        
+
         if (type === 'districts') {
             return data.districts[parentId] || [];
         } else if (type === 'municipalities') {
@@ -101,7 +101,7 @@
                     let url = districtSelect.dataset.url + '?province=' + encodeURIComponent(province);
                     if (isNepali) url += '&ne=true';
                     if (districtSelect.dataset.en === 'true') url += '&en=true';
-                    
+
                     fetch(url)
                         .then(response => response.json())
                         .then(data => {
@@ -132,7 +132,7 @@
                     let url = municipalitySelect.dataset.url + '?district=' + encodeURIComponent(district);
                     if (isNepali) url += '&ne=true';
                     if (municipalitySelect.dataset.en === 'true') url += '&en=true';
-                    
+
                     fetch(url)
                         .then(response => response.json())
                         .then(data => {

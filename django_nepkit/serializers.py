@@ -12,22 +12,20 @@ except ModuleNotFoundError as e:
         "to use `django_nepkit.serializers`."
     ) from e
 
-from django_nepkit.utils import try_parse_nepali_date, try_parse_nepali_datetime
 from django_nepkit.conf import nepkit_settings
-
-# --------------------------------------------------
-# Base Serializer Field
-# --------------------------------------------------
+from django_nepkit.utils import (
+    BS_DATE_FORMAT,
+    BS_DATETIME_FORMAT,
+    try_parse_nepali_date,
+    try_parse_nepali_datetime,
+)
 
 
 class BaseNepaliBSField(serializers.Field):
     """
-    Base DRF field for Nepali (BS) Date / DateTime.
-
-    - **Input**: BS string, or an already-parsed `nepalidate`/`nepalidatetime`
-    - **Output**: formatted BS string (configurable)
-    - **ne**: If True, output uses Devanagari script (default: False)
-    - **en**: If True, output uses English (default: True). When ne=True, en is False.
+    Handles Nepali (BS) dates.
+    - Input: A date string (like '2080-01-01') or a date object.
+    - Output: A formatted string for your API.
     """
 
     format: str = ""
@@ -90,13 +88,12 @@ class BaseNepaliBSField(serializers.Field):
         if isinstance(value, self.nepali_type):
             return self._format_value(value)
 
-        # If DB returns string, try to normalize it.
+        # Convert string dates to Nepali date objects
         if isinstance(value, str):
             parsed = self._parse(value)
             if parsed is not None:
                 return self._format_value(parsed)
 
-        # Fallback: best-effort stringify (keeps behavior non-breaking)
         return str(value)
 
     def to_internal_value(self, data: Any):
@@ -116,33 +113,15 @@ class BaseNepaliBSField(serializers.Field):
         self.fail("invalid", format=self.format)
 
 
-# --------------------------------------------------
-# Nepali Date (BS)
-# --------------------------------------------------
-
-
 class NepaliDateSerializerField(BaseNepaliBSField):
-    """
-    DRF field for Nepali BS Date (YYYY-MM-DD).
+    """API field for Nepali Dates."""
 
-    Pass ne=True for Devanagari output; default is English.
-    """
-
-    format = "%Y-%m-%d"
+    format = BS_DATE_FORMAT
     nepali_type = nepalidate
 
 
-# --------------------------------------------------
-# Nepali DateTime (BS)
-# --------------------------------------------------
-
-
 class NepaliDateTimeSerializerField(BaseNepaliBSField):
-    """
-    DRF field for Nepali BS DateTime (YYYY-MM-DD HH:MM:SS).
+    """API field for Nepali Date and Time."""
 
-    Pass ne=True for Devanagari output; default is English.
-    """
-
-    format = "%Y-%m-%d %H:%M:%S"
+    format = BS_DATETIME_FORMAT
     nepali_type = nepalidatetime

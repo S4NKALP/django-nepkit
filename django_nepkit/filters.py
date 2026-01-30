@@ -17,15 +17,45 @@ class NepaliDateYearFilter(filters.NumberFilter):
     """
     A filter for `NepaliDateField` that allows filtering by Bikram Sambat Year.
     Expects an integer year (e.g., 2080).
-
-    Usage:
-        year = NepaliDateYearFilter(field_name="dob")
     """
 
     def filter(self, qs: QuerySet, value: Any) -> QuerySet:
         if value:
-            # Since date is stored as "YYYY-MM-DD" string
-            return qs.filter(**{f"{self.field_name}__startswith": f"{value}-"})
+            from django_nepkit.utils import BS_DATE_FORMAT
+
+            # Find the date separator (e.g., '-' in '2080-01-01')
+            if BS_DATE_FORMAT.startswith("%Y"):
+                separator = BS_DATE_FORMAT[2] if len(BS_DATE_FORMAT) > 2 else "-"
+                return qs.filter(
+                    **{f"{self.field_name}__startswith": f"{value}{separator}"}
+                )
+
+            # Fallback if the format is unusual
+            return qs.filter(**{f"{self.field_name}__icontains": str(value)})
+        return qs
+
+
+class NepaliDateMonthFilter(filters.NumberFilter):
+    """
+    A filter for `NepaliDateField` that allows filtering by Bikram Sambat Month.
+    Expects an integer month (1-12).
+    """
+
+    def filter(self, qs: QuerySet, value: Any) -> QuerySet:
+        if value:
+            from django_nepkit.utils import BS_DATE_FORMAT
+
+            month_str = f"{int(value):02d}"
+
+            # Standard format: look for '-01-' for Baisakh
+            if BS_DATE_FORMAT == "%Y-%m-%d":
+                return qs.filter(**{f"{self.field_name}__contains": f"-{month_str}-"})
+
+            # Adaptive check for other separators
+            separator = BS_DATE_FORMAT[2] if len(BS_DATE_FORMAT) > 2 else "-"
+            return qs.filter(
+                **{f"{self.field_name}__contains": f"{separator}{month_str}{separator}"}
+            )
         return qs
 
 

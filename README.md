@@ -4,121 +4,99 @@
 
 [![PyPI version](https://badge.fury.io/py/django-nepkit.svg)](https://badge.fury.io/py/django-nepkit)
 [![Python Versions](https://img.shields.io/pypi/pyversions/django-nepkit.svg)](https://pypi.org/project/django-nepkit/)
+[![Django Versions](https://img.shields.io/badge/Django-3.2%20%7C%204.2%20%7C%205.0%20%7C%206.0-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**The essential toolkit for Django developers building for Nepal.**
-
-`django-nepkit` handles the specific localization needs of Nepali web applications with elegance. From correct Bikram Sambat (BS) date handling to smart address management and phone validation.
-
-[Features](#-key-features) • [Installation](#-installation) • [Configuration](#-global-configuration) • [Usage](#-quick-start) • [Storage & TZ](#-date-storage--timezone-behavior) • [API Support](#-api-support-drf--filters)
+**A toolkit for handling BS dates, regional locations, and validation in the local context.**
 
 </div>
 
----
-
-## ✨ Key Features
-
-- **📅 Bikram Sambat (BS) Support**: Specialized `NepaliDateField` and `NepaliDateTimeField` for your models.
-- **🗺️ Administrative Locations**: Out-of-the-box support for Provinces, Districts, and Municipalities with chained selects.
-- **📱 Smart Validation**: Built-in validation for Nepali phone numbers.
-- **🇳🇵 Bilingual by Design**: Seamlessly switch between English and Devanagari (Nepali) output.
-- **🔌 Zero-Config Admin**: Automatic integration with the Nepali datepicker and formatted list displays.
-- **🚀 API Ready**: First-class support for Django REST Framework and filtering.
-- **⚡ HTMX Friendly**: Effortless server-side chained selects using HTMX.
+Building software for local requirements comes with unique challenges—from handling BS dates to managing the regional administrative hierarchy. `django-nepkit` provides solutions for these requirements directly within the Django ecosystem.
 
 ---
 
-## 🛠 Installation
+## 🎯 Features
 
-Install the core package via pip:
+- **📅 BS Date Support**: Model fields for `nepalidate` and `nepalidatetime` objects.
+- **🗺️ Regional Locations**: Pre-defined Provinces, Districts, and Municipalities.
+- **📱 Phone Validation**: Patterns for local mobile and landline numbers.
+- **🔌 Admin Integration**: Automatic setup for datepickers and localized list displays.
+- **🚀 API Support**: DRF Serializers and Filtering backends for BS searching and ordering.
+- **⚡ Location Chaining**: Address linking via client-side JS or server-driven HTMX.
+
+---
+
+## 🛠 Setup
+
+Installation:
 
 ```bash
 pip install django-nepkit
 ```
 
-### 1. Add to `INSTALLED_APPS`
+### 1. Basic Configuration
 
-In your `settings.py`:
+Add it to your `INSTALLED_APPS`:
 
 ```python
 INSTALLED_APPS = [
     # ...
-    "django.contrib.staticfiles",
     "django_nepkit",
 ]
 ```
 
-### 2. (Optional) DRF & Filters Support
+### 2. Global Control
 
-If you plan to use it with Django REST Framework:
-
-```bash
-pip install "django-nepkit[drf]"
-```
-
----
-
-## ⚙️ Global Configuration
-
-Customize the library's behavior globally in your `settings.py`:
+Configure behavior in your `settings.py`:
 
 ```python
 NEPKIT = {
-    "DEFAULT_LANGUAGE": "en",           # "en" or "ne" (default: "en")
-    "DATE_INPUT_FORMATS": [             # Supported parsing formats
-        "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"
-    ],
-    "ADMIN_DATEPICKER": True,            # Toggle Nepali datepicker in admin
-    "TIME_FORMAT": 12,                   # 12 or 24 hour display in admin
+    "DEFAULT_LANGUAGE": "en",           # "en" or "ne"
+    "ADMIN_DATEPICKER": True,           # Toggle the datepicker
+    "TIME_FORMAT": 12,                  # 12 or 24 hour display
+    "DATE_INPUT_FORMATS": ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"], # Input formats
 }
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Core Usage
 
-### 1. Model Fields
+### 1. Model Implementation
 
-`django-nepkit` fields act like standard Django fields but handle BS dates and Nepali validation.
+Fields store `YYYY-MM-DD` strings for database stability while providing BS objects in Python.
 
 ```python
-from django.db import models
-from django_nepkit import (
-    NepaliDateField,
-    NepaliDateTimeField,
-    NepaliPhoneNumberField
-)
+from django_nepkit import NepaliDateField, NepaliPhoneNumberField
 
-class Citizen(models.Model):
+class Profile(models.Model):
     name = models.CharField(max_length=100)
-    dob = NepaliDateField() # Stores as BS "YYYY-MM-DD"
-    phone = NepaliPhoneNumberField() # Validates Nepali patterns
+    birth_date = NepaliDateField() # BS Date support
+    phone = NepaliPhoneNumberField() # Local pattern validation
 ```
 
-### 2. Zero-Config Admin
+### 2. Admin Integration
 
-Simply inherit from `NepaliModelAdmin` to get automatic datepickers and formatted list displays.
+Use `NepaliModelAdmin` for automatic formatting and datepicker support.
 
 ```python
-from django.contrib import admin
-from django_nepkit import NepaliModelAdmin
-from .models import Citizen
+from django_nepkit import NepaliModelAdmin, NepaliDateFilter
 
-@admin.register(Citizen)
-class CitizenAdmin(NepaliModelAdmin):
-    list_display = ("name", "dob", "phone")
+@admin.register(Profile)
+class ProfileAdmin(NepaliModelAdmin):
+    list_display = ("name", "birth_date", "phone")
+    list_filter = (("birth_date", NepaliDateFilter),)
 ```
-
-> [!TIP]
-> If you have a custom base Admin class, use **`NepaliAdminMixin`** to inject Nepali formatting capabilities.
 
 ---
 
 ## 🗺️ Address Management
 
-Model Nepal's administrative structure with automatic filtering: **Province → District → Municipality**.
+Manage the **Province → District → Municipality** hierarchy.
 
-### Standard Usage (Internal JS)
+### Client-Side Chaining (Standard)
+
+Cascading selects in the Django Admin without extra configuration.
 
 ```python
 from django_nepkit import ProvinceField, DistrictField, MunicipalityField
@@ -129,82 +107,94 @@ class Address(models.Model):
     municipality = MunicipalityField()
 ```
 
-### HTMX Usage (Server-side)
+### Server-Side Chaining (HTMX)
 
-For a more modern approach without writing JavaScript, enable HTMX chaining:
-
-```python
-class AddressForm(forms.Form):
-    province = ProvinceField(htmx=True)
-    district = DistrictField(htmx=True)
-    municipality = MunicipalityField()
-```
+Enable `htmx=True` for a server-driven experience.
 
 > [!IMPORTANT]
-> Ensure the [HTMX](https://htmx.org/) library is loaded in your templates when using `htmx=True`.
+> **HTMX Setup:**
+> Include the required URLs in your main `urls.py`:
+>
+> ```python
+> path("nepkit/", include("django_nepkit.urls")),
+> ```
 
 ---
 
-## 🔌 API Support (DRF & Filters)
+## 🔌 API & DRF Support
 
-Full integration with Django REST Framework and Django-Filter.
-
-### Serializers
-Fields automatically respect your `DEFAULT_LANGUAGE` but can be localized individually.
-
-```python
-from django_nepkit.serializers import NepaliDateSerializerField
-
-class CitizenSerializer(serializers.ModelSerializer):
-    dob = NepaliDateSerializerField() # Outputs BS formatted date
-```
-
-### Filters
-Filter your API results by BS Year or Date range effortlessly.
+Search and ordering work natively. BS year/month filtering is supported.
 
 ```python
 from django_nepkit.filters import NepaliDateYearFilter
 
-class CitizenFilter(filters.FilterSet):
-    # Filter by BS Year (e.g., /api/citizens/?birth_year=2080)
-    birth_year = NepaliDateYearFilter(field_name="dob")
+class ProfileFilter(filters.FilterSet):
+    # Filter by BS Year (e.g., /api/profiles/?year=2081)
+    year = NepaliDateYearFilter(field_name="birth_date")
 ```
 
 ---
 
-## 🕒 Date Storage & Timezone Behavior
+## 🕒 Technical Design
 
-| Aspect | Behavior |
-| :--- | :--- |
-| **Database Storage** | Stored as `VARCHAR(10)` or `VARCHAR(19)` in BS format (`YYYY-MM-DD`). |
-| **Why strings?** | Avoids redundant AD/BS conversion overhead and ensures data integrity. |
-| **Object Type** | Retrieved as `nepalidate` or `nepalidatetime` objects (via `nepali` lib). |
-| **Timezone** | Respects `USE_TZ`. Converts UTC `now()` to your local time before BS conversion. |
+This library is engineered for performance, data integrity, and local compliance.
+
+### 1. The "Source of Truth" Strategy
+We avoid on-the-fly AD-to-BS conversion during database queries because it is computationally expensive and prone to logical drift (due to lunar calendar offsets).
+- **Storage**: All BS dates are stored as `VARCHAR(10)` in `YYYY-MM-DD` format.
+- **Sorting**: Because `YYYY` is at the start, string-based database sorting (ascending/descending) accurately matches chronological order.
+- **Indexability**: Standard B-Tree indexes work perfectly on these fields without requiring custom database functions.
+- **Timezone Safety**: Dates are stored without time components, making them immune to server-side timezone shifts during saving.
+
+### 2. Python Object Mapping
+While data is stored as strings, it is automatically hydrated into rich Python objects.
+- **`nepali-datetime` Integration**: Values are cast to `nepalidate` or `nepalidatetime` objects when retrieved from the database.
+- **Validation**: Fields use specialized validators (e.g., `validate_nepali_phone_number`) that leverage official regional patterns.
+
+### 3. Frontend Architecture
+- **Automatic Initialization**: The library includes a lightweight JS observer that automatically initializes the datepicker for any field with the `.nepkit-datepicker` class.
+- **Theme Support**: The datepicker dynamically adapts its skin based on the Django Admin's dark/light mode state.
 
 ---
 
-## 🛠️ Utility Functions
+## ❓ FAQ
 
+**Q: How do I handle Null or Optional dates?**
+Just like standard Django fields, pass `null=True, blank=True` to any `django-nepkit` field. The library handles empty strings and `None` values gracefully.
+
+**Q: Can I change the database storage format?**
+No. The `YYYY-MM-DD` format is hardcoded to ensure database-level sorting and indexing work consistently. However, you can change the **display** format via global settings or template filters.
+
+**Q: How do I get Devanagari (local script) digits in my API?**
+In your Serializer field or Model field, pass `ne=True`.
 ```python
-from django_nepkit import format_nepali_date
-
-# Example: "Magh 17, 2081" or "माघ १७, २०८१"
-formatted = format_nepali_date(my_date, format_string="%B %d, %Y")
+birth_date = NepaliDateField(ne=True)
 ```
+
+**Q: Is the location data up to date?**
+Yes. Province, District, and Municipality data is sourced from the `nepali` Python package, which is regularly updated to reflect administrative changes in Nepal.
+
+**Q: Does it work with standard Django Forms?**
+Yes. `NepaliDateField` uses a specialized `NepaliDateFormField` that automatically handles input parsing and error reporting.
+
+**Q: How do I migrate existing English (AD) dates to BS?**
+We recommend staying on standard `DateField` for AD data. If you must convert to BS, use our [Migration Script](docs/migration_guide.py) to perform a bulk data transformation safely.
+
+**Q: Why use VARCHAR instead of a native DateField?**
+Native `DateField` in most SQL engines is locked to the Gregorian calendar. Using `VARCHAR` allows us to treat the BS date as the primary data point, avoiding the "off-by-one" conversion errors common when syncing two disparate calendars.
 
 ---
 
-## 🤝 Contributing
+## 🤝 Community
 
-We welcome contributions to make this toolkit even better!
+We welcome contributions and feedback from the community.
 
-1.  **Clone**: `git clone https://github.com/S4NKALP/django-nepkit`
-2.  **Setup**: `uv sync` (We use [uv](https://github.com/astral-sh/uv) for project management)
-3.  **Test**: `uv run pytest`
-4.  **Try**: `cd example && python manage.py runserver`
+1. **Clone**: `git clone https://github.com/S4NKALP/django-nepkit`
+2. **Setup**: `uv sync`
+3. **Test**: `uv run pytest`
 
 ---
 
 ## 📄 License
 
-MIT License. Crafted with ❤️ for the Nepali Django community.
+MIT License. Designed for the local Django ecosystem.

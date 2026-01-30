@@ -10,15 +10,13 @@ from django_nepkit.widgets import NepaliDatePickerWidget
 
 
 class NepaliDateFormField(forms.DateField):
-    """
-    A Django Form Field for Nepali Date (Bikram Sambat).
-    """
+    """A form field for entering Nepali dates."""
 
     widget = NepaliDatePickerWidget
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("max_length", None)
-        # Django admin may pass empty_value; base Field does not accept it
+        # Clean up arguments not needed for base Field
         kwargs.pop("empty_value", None)
         super().__init__(*args, **kwargs)
 
@@ -35,16 +33,17 @@ class NepaliDateFormField(forms.DateField):
                 return parsed
             raise ValueError("Invalid BS date format")
         except Exception:
+            from django_nepkit.utils import BS_DATE_FORMAT
+
             raise forms.ValidationError(
-                _("Enter a valid Nepali date in YYYY-MM-DD format."),
+                _("Enter a valid Nepali date in %(format)s format.")
+                % {"format": BS_DATE_FORMAT},
                 code="invalid",
             )
 
 
 class NepaliPhoneNumberFormField(forms.CharField):
-    """
-    A Django Form Field for Nepali Phone Numbers.
-    """
+    """A form field for entering Nepali phone numbers."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

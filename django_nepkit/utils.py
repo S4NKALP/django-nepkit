@@ -7,12 +7,12 @@ from nepali.locations import districts, provinces
 
 from django_nepkit.conf import nepkit_settings
 
-BS_DATE_FORMAT = "%Y-%m-%d"
-BS_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+BS_DATE_FORMAT = nepkit_settings.BS_DATE_FORMAT
+BS_DATETIME_FORMAT = nepkit_settings.BS_DATETIME_FORMAT
 
 
 def _try_parse_nepali(value: Any, cls: Any, fallback_fmt: str) -> Any:
-    """Internal helper to parse Nepali date/datetime."""
+    """Helper to turn a string into a Nepali date object."""
     if value in (None, ""):
         return None
     if isinstance(value, cls):
@@ -31,29 +31,23 @@ def _try_parse_nepali(value: Any, cls: Any, fallback_fmt: str) -> Any:
 
 
 def try_parse_nepali_date(value: Any) -> Optional[nepalidate]:
-    """
-    Best-effort conversion to `nepalidate`.
-    """
+    """Convert any value to a Nepali Date."""
     return _try_parse_nepali(value, nepalidate, BS_DATE_FORMAT)
 
 
 def try_parse_nepali_datetime(value: Any) -> Optional[nepalidatetime]:
-    """
-    Best-effort conversion to `nepalidatetime`.
-    """
+    """Convert any value to a Nepali Date and Time."""
     return _try_parse_nepali(value, nepalidatetime, BS_DATETIME_FORMAT)
 
 
 def _get_location_children(parent_list, parent_name, child_attr, ne=False):
-    """
-    Internal helper to finding a parent in a list and returning its children (districts/municipalities).
-    """
+    """Find children (like districts) of a parent (like a province)."""
     selected_parent = None
     for p in parent_list:
         p_name = p.name
         p_name_ne = getattr(p, "name_nepali", None)
 
-        # Mapping fix for lookups
+        # Handle province name variations
         if parent_name == "Koshi Province":
             if p_name == "Province 1":
                 selected_parent = p
@@ -85,15 +79,11 @@ def _get_location_children(parent_list, parent_name, child_attr, ne=False):
 
 
 def get_districts_by_province(province_name, ne=False, en=True):
-    """
-    Returns a list of districts in the given province.
-    """
+    """Get all districts for a province."""
     # Logic note: if ne=True is passed, we shouldn't care about en=True (handled by caller typically)
     return _get_location_children(provinces, province_name, "districts", ne=ne)
 
 
 def get_municipalities_by_district(district_name, ne=False, en=True):
-    """
-    Returns a list of municipalities in the given district.
-    """
+    """Get all municipalities for a district."""
     return _get_location_children(districts, district_name, "municipalities", ne=ne)

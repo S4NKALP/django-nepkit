@@ -14,6 +14,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_nepkit",
+    "rest_framework",
+    "django_filters",
     "demo",
 ]
 

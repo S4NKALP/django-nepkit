@@ -5,13 +5,13 @@ DEFAULTS = {
     "DATE_INPUT_FORMATS": ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"],
     "ADMIN_DATEPICKER": True,
     "TIME_FORMAT": 12,
+    "BS_DATE_FORMAT": "%Y-%m-%d",
+    "BS_DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
 }
 
 
 class NepkitSettings:
-    """
-    A settings object that allows items to be accessed as properties.
-    """
+    """Handles the global NEPKIT settings from your settings.py."""
 
     def __init__(self, user_settings=None, defaults=None):
         self._user_settings = user_settings or {}
@@ -22,10 +22,10 @@ class NepkitSettings:
             raise AttributeError(f"Invalid NEPKIT setting: '{attr}'")
 
         try:
-            # Check for user setting
+            # Check if the user has a custom setting
             val = self._user_settings[attr]
         except KeyError:
-            # Fall back to defaults
+            # Use default value if not set
             val = self.defaults[attr]
 
         return val

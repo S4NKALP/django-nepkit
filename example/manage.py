@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-"""Django's command-line utility for administrative tasks."""
+"""Django utility for running commands."""
 
 import os
 import sys
 
 
 def main():
-    """Run administrative tasks."""
+    """Main entry point for Django commands."""
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "example_project.settings")
     try:
