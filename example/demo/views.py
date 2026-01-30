@@ -11,11 +11,10 @@ from .serializers import (
     TransactionSerializer,
 )
 from django_nepkit.filters import (
-    NepaliDateYearFilter,
-    NepaliDateMonthFilter,
     NepaliCurrencyRangeFilter,
     NepaliDateRangeFilter,
 )
+from django_nepkit.utils import normalize_address
 
 
 class PersonForm(forms.ModelForm):
@@ -137,3 +136,19 @@ class TransactionViewSet(viewsets.ModelViewSet):
             fields = ["title", "amount", "date"]
 
     filterset_class = TransactionFilter
+
+
+def address_normalize_demo(request):
+    address = request.GET.get("address", "")
+    result = None
+    if address:
+        result = normalize_address(address)
+
+    if request.headers.get("HX-Request") == "true":
+        return render(
+            request, "demo/address_normalize_partial.html", {"result": result}
+        )
+
+    return render(
+        request, "demo/address_normalize.html", {"address": address, "result": result}
+    )

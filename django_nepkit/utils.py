@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from nepali.datetime import nepalidate, nepalidatetime
-from nepali.locations import districts, provinces
+from nepali.locations import districts, municipalities, provinces
 
 from django_nepkit.conf import nepkit_settings
 
@@ -296,3 +296,132 @@ def english_to_nepali_unicode(text: Any) -> str:
         return ""
 
     return english_to_nepali(text)
+
+
+def normalize_address(address_string: str) -> dict[str, Optional[str]]:
+    """
+    Attempts to normalize a Nepali address string into Province, District, and Municipality.
+    Returns a dictionary with 'province', 'district', and 'municipality'.
+    """
+    if not address_string:
+        return {"province": None, "district": None, "municipality": None}
+
+    result = {"province": None, "district": None, "municipality": None}
+
+    import re
+
+    content = address_string.replace(",", " ").replace("-", " ")
+
+    def normalize_nepali(text):
+        if not text:
+            return text
+        # Replace Chandrabindu with Anusvara for easier matching
+        return text.replace("ँ", "ं").replace("ाँ", "ां")
+
+    tokens = [t.strip() for t in content.split() if t.strip()]
+    normalized_tokens = [normalize_nepali(t) for t in tokens]
+
+    # We try to match from most specific to least specific
+    found_municipality = None
+    found_district = None
+    found_province = None
+
+    # Helper for name matching
+    def matches(name_eng, name_nep, token, normalized_token):
+        token_lower = token.lower()
+        name_nep_norm = normalize_nepali(name_nep)
+
+        # Exact matches
+        if (
+            token == name_nep
+            or normalized_token == name_nep_norm
+            or token_lower == name_eng.lower()
+        ):
+            return True
+
+        # Handle "Province 1" -> "Koshi" mapping
+        if (name_eng == "Province 1" and "koshi" in token_lower) or (
+            name_nep_norm == normalize_nepali("प्रदेश नं. १")
+            and "कोशी" in normalized_token
+        ):
+            return True
+
+        # Partial matches for English (e.g., "Pokhara" in "Pokhara Metropolitan City")
+        # Only if token is at least 4 characters to avoid too many false positives
+        if len(token) >= 4:
+            if token_lower in name_eng.lower():
+                return True
+
+        # Partial matches for Nepali
+        if len(normalized_token) >= 2:
+            if normalized_token in name_nep_norm:
+                return True
+
+        return False
+
+    # Check for municipality first
+    for i, token in enumerate(tokens):
+        nt = normalized_tokens[i]
+        for m in municipalities:
+            if matches(m.name, m.name_nepali, token, nt):
+                found_municipality = m
+                break
+        if found_municipality:
+            break
+
+    # Check for district
+    for i, token in enumerate(tokens):
+        nt = normalized_tokens[i]
+        for d in districts:
+            if matches(d.name, d.name_nepali, token, nt):
+                found_district = d
+                break
+        if found_district:
+            break
+
+    # Check for province
+    for i, token in enumerate(tokens):
+        nt = normalized_tokens[i]
+        for p in provinces:
+            if matches(p.name, p.name_nepali, token, nt):
+                found_province = p
+                break
+        if found_province:
+            break
+
+    # Fill in the gaps using hierarchy
+    if found_municipality:
+        result["municipality"] = found_municipality.name
+        if not found_district:
+            found_district = found_municipality.district
+        if not found_province:
+            found_province = found_municipality.province
+
+    if found_district:
+        result["district"] = found_district.name
+        if not found_province:
+            found_province = found_district.province
+
+    if found_province:
+        # Handle "Province 1" -> "Koshi Province" consistency
+        name = found_province.name
+        if name == "Province 1":
+            name = "Koshi Province"
+        result["province"] = name
+
+    # Check for Nepali context
+    is_nepali = any(
+        re.search(r"[\u0900-\u097F]", t) for t in tokens
+    )  # Basic check for Devanagari characters
+    if is_nepali:
+        if found_municipality:
+            result["municipality"] = found_municipality.name_nepali
+        if found_district:
+            result["district"] = found_district.name_nepali
+        if found_province:
+            name = found_province.name_nepali
+            if name == "प्रदेश नं. १":
+                name = "कोशी प्रदेश"
+            result["province"] = name
+
+    return result

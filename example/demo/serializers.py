@@ -15,7 +15,9 @@ class PersonSerializer(NepaliLocalizedSerializerMixin, serializers.ModelSerializ
         fields = "__all__"
 
 
-class TransactionSerializer(NepaliLocalizedSerializerMixin, serializers.ModelSerializer):
+class TransactionSerializer(
+    NepaliLocalizedSerializerMixin, serializers.ModelSerializer
+):
     amount_formatted = NepaliCurrencySerializerField(source="amount")
 
     class Meta:

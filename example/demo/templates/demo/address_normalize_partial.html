@@ -1,0 +1,14 @@
+{% if result %}
+<div class="result-box">
+    <h3>Normalized Result:</h3>
+    <ul>
+        <li><strong>Province:</strong> {{ result.province|default:"Not found" }}</li>
+        <li><strong>District:</strong> {{ result.district|default:"Not found" }}</li>
+        <li><strong>Municipality:</strong> {{ result.municipality|default:"Not found" }}</li>
+    </ul>
+</div>
+{% elif address %}
+<div style="color: darkorange; margin-top: 20px;">
+    No matching location found for "{{ address }}". Try typing a specific name.
+</div>
+{% endif %}

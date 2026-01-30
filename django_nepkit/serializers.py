@@ -142,12 +142,14 @@ class NepaliCurrencySerializerField(serializers.Field):
     def to_representation(self, value):
         if value is None:
             return None
-        
+
         ne = self.ne
         if ne is None:
             ne = self.context.get("ne", nepkit_settings.DEFAULT_LANGUAGE == "ne")
 
-        return format_nepali_currency(value, currency_symbol=self.currency_symbol, ne=ne)
+        return format_nepali_currency(
+            value, currency_symbol=self.currency_symbol, ne=ne
+        )
 
     def to_internal_value(self, data):
         # We don't support converting back from formatted string to decimal here

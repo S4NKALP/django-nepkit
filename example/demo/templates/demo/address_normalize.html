@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Address Normalization Demo</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 400px; padding: 8px; }
+        .result-box { margin-top: 20px; border: 1px solid #ddd; padding: 15px; background: #f9f9f9; }
+    </style>
+    <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+</head>
+<body>
+    <h1>Address Normalization Demo</h1>
+    <p>Enter an address string to extract Province, District, and Municipality.</p>
+    
+    <form hx-get="{% url 'demo:address-normalize' %}" hx-target="#result-area" hx-trigger="keyup changed delay:300ms from:#address-input">
+        <div class="form-group">
+            <label for="address-input">Address String:</label>
+            <input type="text" id="address-input" name="address" placeholder="e.g. Kathmandu or काठमाडौँ" value="{{ address }}">
+        </div>
+    </form>
+
+    <div id="result-area">
+        {% include "demo/address_normalize_partial.html" %}
+    </div>
+
+    <br>
+    <a href="{% url 'demo:person-list' %}">Back to List</a>
+</body>
+</html>

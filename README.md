@@ -27,6 +27,7 @@ Building software for local requirements comes with unique challenges, from hand
 - **🔌 Admin Integration**: Automatic setup for datepickers and localized list displays.
 - **🚀 API Support**: DRF Serializers and Filtering backends for BS searching and ordering.
 - **⚡ Location Chaining**: Address linking via client side JS or server driven HTMX.
+- **🔍 Address Normalization**: Utility to extract structured locations from raw strings.
 
 ---
 
@@ -109,6 +110,21 @@ class Address(models.Model):
     province = ProvinceField()
     district = DistrictField()
     municipality = MunicipalityField()
+
+### Address Normalization
+
+Standardize raw strings into structured location data (Province, District, Municipality).
+
+```python
+from django_nepkit.utils import normalize_address
+
+# Supports English or Nepali input
+result = normalize_address("House 123, Bharatpur, Chitwan")
+# Returns: {'province': 'Bagmati Province', 'district': 'Chitawan', 'municipality': 'Bharatpur Metropolitan City'}
+
+result_ne = normalize_address("विराटनगर, कोशी")
+# Returns: {'province': 'कोशी प्रदेश', 'district': 'मोरङ', 'municipality': 'विराटनगर महानगरपालिका'}
+```
 ```
 
 ### Server Side Chaining (HTMX)
