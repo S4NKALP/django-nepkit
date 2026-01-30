@@ -73,4 +73,12 @@ TIME_ZONE = "Asia/Kathmandu"
 USE_I18N = True
 USE_TZ = True
 
+# django-nepkit settings
+NEPKIT = {
+    "DEFAULT_LANGUAGE": "en",  # Default to Devanagari for fields and widgets
+    "DATE_INPUT_FORMATS": ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"],
+    "ADMIN_DATEPICKER": True,
+    "TIME_FORMAT": 12,  # 12-hour format with AM/PM
+}
+
 STATIC_URL = "static/"

@@ -13,6 +13,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 from django_nepkit.utils import try_parse_nepali_date, try_parse_nepali_datetime
+from django_nepkit.conf import nepkit_settings
 
 # --------------------------------------------------
 # Base Serializer Field
@@ -41,24 +42,32 @@ class BaseNepaliBSField(serializers.Field):
         self,
         *,
         format: Optional[str] = None,
-        ne: bool = False,
-        en: bool = True,
+        ne: Optional[bool] = None,
+        en: Optional[bool] = None,
         **kwargs: Any,
     ) -> None:
         """
         Args:
             format: Optional `strftime` format used for representation.
                     If not provided, uses the class default.
-            ne: If True, output in Devanagari script (default: False).
-            en: If True, output in English (default: True). When ne=True, en is False.
+            ne: If True, output in Devanagari script. If None, uses DEFAULT_LANGUAGE.
+            en: If True, output in English. If None, derived from ne.
         """
         if format is not None:
             self.format = format
-        self.ne = ne
-        if self.ne:
-            self.en = False
+
+        default_lang = nepkit_settings.DEFAULT_LANGUAGE
+
+        if ne is None:
+            self.ne = default_lang == "ne"
+        else:
+            self.ne = ne
+
+        if en is None:
+            self.en = not self.ne
         else:
             self.en = en
+
         super().__init__(**kwargs)
 
     def _parse(self, value: str):

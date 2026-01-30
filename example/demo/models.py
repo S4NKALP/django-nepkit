@@ -12,22 +12,22 @@ from django_nepkit import (
 
 class Person(models.Model):
     name = models.CharField(max_length=100)
-    # Date/time fields - examples with and without Devanagari
-    birth_date = NepaliDateField(ne=True)  # Devanagari
-    birth_date_en = NepaliDateField(blank=True, null=True)  # English (default)
-    registration_time = NepaliTimeField(auto_now_add=True, ne=True)  # Devanagari
+    # Date/time fields - now default to English via NEPKIT['DEFAULT_LANGUAGE']
+    birth_date = NepaliDateField()  # Defaults to en=True
+    birth_date_ne = NepaliDateField(ne=True, blank=True, null=True)  # Explicitly Nepali
+    registration_time = NepaliTimeField(auto_now_add=True)  # Defaults to en=True
     phone_number = NepaliPhoneNumberField()
 
-    # Address chaining - examples with and without Devanagari
-    province = ProvinceField(ne=True)  # Devanagari
-    province_en = ProvinceField(blank=True, null=True)  # English (default)
-    district = DistrictField(ne=True)  # Devanagari
-    district_en = DistrictField(blank=True, null=True)  # English (default)
-    municipality = MunicipalityField(ne=True)  # Devanagari
-    municipality_en = MunicipalityField(blank=True, null=True)  # English (default)
+    # Address chaining - now default to English via NEPKIT['DEFAULT_LANGUAGE']
+    province = ProvinceField()  # Defaults to en=True
+    province_ne = ProvinceField(ne=True, blank=True, null=True)  # Explicitly Nepali
+    district = DistrictField()  # Defaults to en=True
+    district_ne = DistrictField(ne=True, blank=True, null=True)  # Explicitly Nepali
+    municipality = MunicipalityField()  # Defaults to en=True
+    municipality_ne = MunicipalityField(ne=True, blank=True, null=True)  # Explicitly Nepali
 
-    created_at = NepaliDateTimeField(auto_now_add=True, ne=True)  # Devanagari
-    updated_at = NepaliDateTimeField(auto_now=True, ne=True)  # Devanagari
+    created_at = NepaliDateTimeField(auto_now_add=True)  # Defaults to en=True
+    updated_at = NepaliDateTimeField(auto_now=True)  # Defaults to en=True
 
     def __str__(self):
         return self.name

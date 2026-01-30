@@ -5,21 +5,28 @@ from typing import Any, Optional
 from nepali.datetime import nepalidate, nepalidatetime
 from nepali.locations import districts, provinces
 
+from django_nepkit.conf import nepkit_settings
+
 BS_DATE_FORMAT = "%Y-%m-%d"
 BS_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def _try_parse_nepali(value: Any, cls: Any, fmt: str) -> Any:
+def _try_parse_nepali(value: Any, cls: Any, fallback_fmt: str) -> Any:
     """Internal helper to parse Nepali date/datetime."""
     if value in (None, ""):
         return None
     if isinstance(value, cls):
         return value
     if isinstance(value, str):
-        try:
-            return cls.strptime(value.strip(), fmt)
-        except Exception:
-            return None
+        formats = nepkit_settings.DATE_INPUT_FORMATS
+        if fallback_fmt not in formats:
+            formats = list(formats) + [fallback_fmt]
+
+        for fmt in formats:
+            try:
+                return cls.strptime(value.strip(), fmt)
+            except Exception:
+                continue
     return None
 
 

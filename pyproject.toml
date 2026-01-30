@@ -55,6 +55,7 @@ classifiers = [
 [project.optional-dependencies]
 drf = [
     "djangorestframework>=3.14",
+    "django-filter>=23.1",
 ]
 
 [project.urls]

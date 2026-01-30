@@ -1,4 +1,5 @@
 from django import template
+from django.utils import timezone
 from nepali.datetime import nepalidate, nepalihumanize
 from nepali.number import nepalinumber
 import datetime
@@ -11,7 +12,11 @@ def _coerce_ad_date_to_bs(value):
     Internal helper: if value is AD date/datetime, convert to `nepalidate`.
     Does NOT attempt to parse strings (keeps template behavior minimal).
     """
-    if isinstance(value, (datetime.datetime, datetime.date)):
+    if isinstance(value, datetime.datetime):
+        if timezone.is_aware(value):
+            value = timezone.localtime(value)
+        return nepalidate.from_date(value)
+    if isinstance(value, datetime.date):
         return nepalidate.from_date(value)
     return value
 

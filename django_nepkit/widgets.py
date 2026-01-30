@@ -2,6 +2,8 @@ from django import forms
 from django.urls import reverse_lazy
 from nepali.datetime import nepalidate
 
+from django_nepkit.conf import nepkit_settings
+
 
 def _append_css_class(attrs, class_name: str):
     """
@@ -14,12 +16,11 @@ def _append_css_class(attrs, class_name: str):
 
 class NepaliWidgetMixin:
     def __init__(self, *args, **kwargs):
-        self.ne = kwargs.pop("ne", False)
-        en_value = kwargs.pop("en", True)
-        if self.ne:
-            self.en = False
-        else:
-            self.en = en_value
+        default_lang = nepkit_settings.DEFAULT_LANGUAGE
+        self.ne = kwargs.pop("ne", default_lang == "ne")
+        
+        self.en = kwargs.pop("en", not self.ne)
+        self.htmx = kwargs.pop("htmx", False)
 
         attrs = kwargs.get("attrs", {}) or {}
 
@@ -51,28 +52,35 @@ class ChainedSelectWidget(forms.Select):
 class ProvinceSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
     def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-province-select")
+        if self.htmx:
+            url = reverse_lazy("django_nepkit:district-list")
+            attrs.update({
+                "hx-get": url,
+                "hx-target": ".nepkit-district-select",
+                "hx-trigger": "change",
+            })
 
 
 class DistrictSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
     def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-district-select")
-        try:
-            url = reverse_lazy("django_nepkit:district-list")
-            str(url)  # Force evaluation to catch NoReverseMatch
-            attrs["data-url"] = url
-        except Exception:
-            pass
+        url = reverse_lazy("django_nepkit:district-list")
+        attrs["data-url"] = url
+        
+        if self.htmx:
+            url_muni = reverse_lazy("django_nepkit:municipality-list")
+            attrs.update({
+                "hx-get": url_muni,
+                "hx-target": ".nepkit-municipality-select",
+                "hx-trigger": "change",
+            })
 
 
 class MunicipalitySelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
     def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-municipality-select")
-        try:
-            url = reverse_lazy("django_nepkit:municipality-list")
-            str(url)  # Force evaluation to catch NoReverseMatch
-            attrs["data-url"] = url
-        except Exception:
-            pass
+        url = reverse_lazy("django_nepkit:municipality-list")
+        attrs["data-url"] = url
 
 
 class NepaliDatePickerWidget(NepaliWidgetMixin, forms.TextInput):

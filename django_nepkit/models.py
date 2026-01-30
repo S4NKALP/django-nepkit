@@ -1,6 +1,8 @@
 from datetime import date as python_date
+from datetime import datetime as python_datetime
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from nepali.datetime import nepalidate, nepalidatetime
 from nepali.locations import districts, municipalities, provinces
@@ -19,6 +21,7 @@ from django_nepkit.widgets import (
     NepaliDatePickerWidget,
     ProvinceSelectWidget,
 )
+from django_nepkit.conf import nepkit_settings
 
 
 class NepaliFieldMixin:
@@ -27,14 +30,19 @@ class NepaliFieldMixin:
     """
 
     def __init__(self, *args, **kwargs):
-        self.ne = kwargs.pop("ne", False)
-        # Always pop en from kwargs to avoid passing it to super()
-        en_value = kwargs.pop("en", True)
-        # If ne=True, automatically set en=False
-        if self.ne:
+        default_lang = nepkit_settings.DEFAULT_LANGUAGE
+        self.ne = kwargs.pop("ne", default_lang == "ne")
+        
+        explicit_en = "en" in kwargs
+        en_value = kwargs.pop("en", not self.ne)
+        
+        if self.ne and not explicit_en:
             self.en = False
         else:
             self.en = en_value
+
+        self.htmx = kwargs.pop("htmx", False)
+            
         super().__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -43,6 +51,8 @@ class NepaliFieldMixin:
             kwargs["ne"] = True
         if not self.en:
             kwargs["en"] = False
+        if self.htmx:
+            kwargs["htmx"] = True
         return name, path, args, kwargs
 
 
@@ -77,8 +87,11 @@ class NepaliDateField(NepaliFieldMixin, models.CharField):
 
     def pre_save(self, model_instance, add):
         if self.auto_now or (self.auto_now_add and add):
-            # Using nepalidate.today() to get current BS date.
-            value = nepalidate.today().strftime(BS_DATE_FORMAT)
+            # Using timezone.now() to get current date, then converting to BS.
+            now = timezone.now()
+            if timezone.is_aware(now):
+                now = timezone.localtime(now)
+            value = nepalidate.from_date(now).strftime(BS_DATE_FORMAT)
             setattr(model_instance, self.attname, value)
             return value
         return super().pre_save(model_instance, add)
@@ -90,8 +103,10 @@ class NepaliDateField(NepaliFieldMixin, models.CharField):
     def to_python(self, value):
         if value is None or isinstance(value, nepalidate):
             return value
-        if isinstance(value, python_date):
+        if isinstance(value, (python_date, python_datetime)):
             try:
+                if isinstance(value, python_datetime) and timezone.is_aware(value):
+                    value = timezone.localtime(value)
                 return nepalidate.from_date(value)
             except (ValueError, TypeError):
                 return str(value)
@@ -115,8 +130,10 @@ class NepaliDateField(NepaliFieldMixin, models.CharField):
             return value
         if isinstance(value, nepalidate):
             return value.strftime(BS_DATE_FORMAT)
-        if isinstance(value, python_date):
+        if isinstance(value, (python_date, python_datetime)):
             try:
+                if isinstance(value, python_datetime) and timezone.is_aware(value):
+                    value = timezone.localtime(value)
                 return nepalidate.from_date(value).strftime(BS_DATE_FORMAT)
             except (ValueError, TypeError):
                 return str(value)
@@ -171,7 +188,10 @@ class NepaliDateTimeField(NepaliFieldMixin, models.CharField):
 
     def pre_save(self, model_instance, add):
         if self.auto_now or (self.auto_now_add and add):
-            value = nepalidatetime.now().strftime(BS_DATETIME_FORMAT)
+            now = timezone.now()
+            if timezone.is_aware(now):
+                now = timezone.localtime(now)
+            value = nepalidatetime.from_datetime(now).strftime(BS_DATETIME_FORMAT)
             setattr(model_instance, self.attname, value)
             return value
         return super().pre_save(model_instance, add)
@@ -183,6 +203,13 @@ class NepaliDateTimeField(NepaliFieldMixin, models.CharField):
     def to_python(self, value):
         if value is None or isinstance(value, nepalidatetime):
             return value
+        if isinstance(value, python_datetime):
+            try:
+                if timezone.is_aware(value):
+                    value = timezone.localtime(value)
+                return nepalidatetime.from_datetime(value)
+            except (ValueError, TypeError):
+                return str(value)
         if isinstance(value, str):
             parsed = try_parse_nepali_datetime(value)
             return parsed if parsed is not None else value
@@ -203,6 +230,13 @@ class NepaliDateTimeField(NepaliFieldMixin, models.CharField):
             return value
         if isinstance(value, nepalidatetime):
             return value.strftime(BS_DATETIME_FORMAT)
+        if isinstance(value, python_datetime):
+            try:
+                if timezone.is_aware(value):
+                    value = timezone.localtime(value)
+                return nepalidatetime.from_datetime(value).strftime(BS_DATETIME_FORMAT)
+            except (ValueError, TypeError):
+                return str(value)
         if isinstance(value, str):
             return value
         return str(value)
@@ -245,7 +279,8 @@ class ProvinceField(NepaliFieldMixin, models.CharField):
         # Or just manually set self.ne/self.en here and don't rely on Mixin's init for choices, but rely on it for other things?
 
         # To avoid complexity, I'll peek at kwargs['ne'] if it exists.
-        ne = kwargs.get("ne", False)
+        default_lang = nepkit_settings.DEFAULT_LANGUAGE
+        ne = kwargs.get("ne", default_lang == "ne")
 
         def get_p_name(p, ne):
             name = getattr(p, "name_nepali", p.name) if ne else p.name
@@ -261,9 +296,8 @@ class ProvinceField(NepaliFieldMixin, models.CharField):
         super().__init__(*args, **kwargs)
 
     def formfield(self, **kwargs):
-        defaults = {"widget": ProvinceSelectWidget(ne=self.ne, en=self.en)}
+        defaults = {"widget": ProvinceSelectWidget(ne=self.ne, en=self.en, htmx=self.htmx)}
         defaults.update(kwargs)
-        # Bypassing the immediate parent's formfield if it's just CharField's
         return super(models.CharField, self).formfield(**defaults)
         # Wait, super().formfield() calls Django's CharField.formfield.
         # We want that.
@@ -273,7 +307,8 @@ class DistrictField(NepaliFieldMixin, models.CharField):
     description = _("Nepali District")
 
     def __init__(self, *args, **kwargs):
-        ne = kwargs.get("ne", False)
+        default_lang = nepkit_settings.DEFAULT_LANGUAGE
+        ne = kwargs.get("ne", default_lang == "ne")
         kwargs.setdefault("max_length", 100)
 
         def get_d_name(d, ne):
@@ -285,7 +320,7 @@ class DistrictField(NepaliFieldMixin, models.CharField):
         super().__init__(*args, **kwargs)
 
     def formfield(self, **kwargs):
-        defaults = {"widget": DistrictSelectWidget(ne=self.ne, en=self.en)}
+        defaults = {"widget": DistrictSelectWidget(ne=self.ne, en=self.en, htmx=self.htmx)}
         defaults.update(kwargs)
         return super(models.CharField, self).formfield(**defaults)
 
@@ -294,7 +329,8 @@ class MunicipalityField(NepaliFieldMixin, models.CharField):
     description = _("Nepali Municipality")
 
     def __init__(self, *args, **kwargs):
-        ne = kwargs.get("ne", False)
+        default_lang = nepkit_settings.DEFAULT_LANGUAGE
+        ne = kwargs.get("ne", default_lang == "ne")
         kwargs.setdefault("max_length", 100)
 
         def get_m_name(m, ne):
@@ -306,6 +342,6 @@ class MunicipalityField(NepaliFieldMixin, models.CharField):
         super().__init__(*args, **kwargs)
 
     def formfield(self, **kwargs):
-        defaults = {"widget": MunicipalitySelectWidget(ne=self.ne, en=self.en)}
+        defaults = {"widget": MunicipalitySelectWidget(ne=self.ne, en=self.en, htmx=self.htmx)}
         defaults.update(kwargs)
         return super(models.CharField, self).formfield(**defaults)

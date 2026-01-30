@@ -9,14 +9,14 @@ class PersonForm(forms.ModelForm):
         fields = [
             "name",
             "birth_date",
-            "birth_date_en",
+            "birth_date_ne",
             "phone_number",
             "province",
-            "province_en",
+            "province_ne",
             "district",
-            "district_en",
+            "district_ne",
             "municipality",
-            "municipality_en",
+            "municipality_ne",
         ]
 
 

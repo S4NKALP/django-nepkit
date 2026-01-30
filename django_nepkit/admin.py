@@ -7,6 +7,7 @@ from django_nepkit.utils import (
     try_parse_nepali_date,
     try_parse_nepali_datetime,
 )
+from django_nepkit.conf import nepkit_settings
 
 
 def _format_nepali_common(value, try_parse_func, format_string, ne, cls_type):
@@ -40,11 +41,17 @@ def format_nepali_date(date_value, format_string="%B %d, %Y", ne=False):
 
 
 def format_nepali_datetime(
-    datetime_value, format_string="%B %d, %Y %I:%M %p", ne=False
+    datetime_value, format_string=None, ne=False
 ):
     """
     Format a nepalidatetime object with Nepali month names.
     """
+    if format_string is None:
+        if nepkit_settings.TIME_FORMAT == 24:
+            format_string = "%B %d, %Y %H:%M"
+        else:
+            format_string = "%B %d, %Y %I:%M %p"
+
     return _format_nepali_common(
         datetime_value, try_parse_nepali_datetime, format_string, ne, nepalidatetime
     )
@@ -148,21 +155,21 @@ class NepaliAdminMixin:
         Args:
             date_value: A nepalidate object or string
             format_string: strftime format string
-            ne: If True, format using Devanagari script. If None, auto-detect from field (default: None)
+            ne: If True, format using Devanagari script. If None, auto-detect from field or global settings (default: None)
             field_name: Name of the field to auto-detect 'ne' setting from (optional)
         """
         # Auto-detect 'ne' from field if not explicitly provided
         if ne is None and field_name:
             ne = self._get_field_ne_setting(field_name)
         elif ne is None:
-            ne = False
+            ne = nepkit_settings.DEFAULT_LANGUAGE == "ne"
 
         return format_nepali_date(date_value, format_string, ne=ne)
 
     def format_nepali_datetime(
         self,
         datetime_value,
-        format_string="%B %d, %Y %I:%M %p",
+        format_string=None,
         ne=None,
         field_name=None,
     ):
@@ -172,14 +179,14 @@ class NepaliAdminMixin:
         Args:
             datetime_value: A nepalidatetime object or string
             format_string: strftime format string
-            ne: If True, format using Devanagari script. If None, auto-detect from field (default: None)
+            ne: If True, format using Devanagari script. If None, auto-detect from field or global settings (default: None)
             field_name: Name of the field to auto-detect 'ne' setting from (optional)
         """
         # Auto-detect 'ne' from field if not explicitly provided
         if ne is None and field_name:
             ne = self._get_field_ne_setting(field_name)
         elif ne is None:
-            ne = False
+            ne = nepkit_settings.DEFAULT_LANGUAGE == "ne"
 
         return format_nepali_datetime(datetime_value, format_string, ne=ne)
 
@@ -262,7 +269,7 @@ class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
         except Exception:
             return super().formfield_for_dbfield(db_field, request, **kwargs)
 
-        if isinstance(db_field, (NepaliDateField, NepaliDateTimeField)):
+        if isinstance(db_field, (NepaliDateField, NepaliDateTimeField)) and nepkit_settings.ADMIN_DATEPICKER:
             # Pass ne/en parameters from field to widget if they exist
             widget_kwargs = {}
             if hasattr(db_field, "ne"):
