@@ -9,5 +9,5 @@
 - [x] **REST API Enhancements**: Add more specialized DRF serializers for range filters and localized outputs.
 
 ## Address & Location
-- [ ] **Address Normalization**: Implement a way to verify or suggest standardized Nepali addresses.
+- [x] **Address Normalization**: Implement a way to verify or suggest standardized Nepali addresses.
 - [ ] **Map Integration**: Helpers to get geocoding data for selected Provinces/Districts/Municipalities.
