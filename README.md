@@ -13,6 +13,8 @@
 
 Building software for local requirements comes with unique challenges—from handling BS dates to managing the regional administrative hierarchy. `django-nepkit` provides solutions for these requirements directly within the Django ecosystem.
 
+![Showcase](docs/showcase.gif)
+
 ---
 
 ## 🎯 Features
@@ -160,27 +162,34 @@ While data is stored as strings, it is automatically hydrated into rich Python o
 ## ❓ FAQ
 
 **Q: How do I handle Null or Optional dates?**
+
 Just like standard Django fields, pass `null=True, blank=True` to any `django-nepkit` field. The library handles empty strings and `None` values gracefully.
 
 **Q: Can I change the database storage format?**
+
 No. The `YYYY-MM-DD` format is hardcoded to ensure database-level sorting and indexing work consistently. However, you can change the **display** format via global settings or template filters.
 
 **Q: How do I get Devanagari (local script) digits in my API?**
+
 In your Serializer field or Model field, pass `ne=True`.
 ```python
 birth_date = NepaliDateField(ne=True)
 ```
 
 **Q: Is the location data up to date?**
+
 Yes. Province, District, and Municipality data is sourced from the `nepali` Python package, which is regularly updated to reflect administrative changes in Nepal.
 
 **Q: Does it work with standard Django Forms?**
+
 Yes. `NepaliDateField` uses a specialized `NepaliDateFormField` that automatically handles input parsing and error reporting.
 
 **Q: How do I migrate existing English (AD) dates to BS?**
+
 We recommend staying on standard `DateField` for AD data. If you must convert to BS, use our [Migration Script](docs/migration_guide.py) to perform a bulk data transformation safely.
 
 **Q: Why use VARCHAR instead of a native DateField?**
+
 Native `DateField` in most SQL engines is locked to the Gregorian calendar. Using `VARCHAR` allows us to treat the BS date as the primary data point, avoiding the "off-by-one" conversion errors common when syncing two disparate calendars.
 
 ---
