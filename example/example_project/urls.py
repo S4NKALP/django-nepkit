@@ -3,6 +3,6 @@ from django.urls import include, path
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("nepkit/", include("django_nepkit.urls")),
+    # path("nepkit/", include("django_nepkit.urls")),
     path("", include("demo.urls")),
 ]

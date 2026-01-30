@@ -43,7 +43,20 @@ def _get_location_children(parent_list, parent_name, child_attr, ne=False):
     """
     selected_parent = None
     for p in parent_list:
-        if p.name == parent_name or getattr(p, "name_nepali", None) == parent_name:
+        p_name = p.name
+        p_name_ne = getattr(p, "name_nepali", None)
+
+        # Mapping fix for lookups
+        if parent_name == "Koshi Province":
+            if p_name == "Province 1":
+                selected_parent = p
+                break
+        elif parent_name == "कोशी प्रदेश":
+            if p_name_ne == "प्रदेश नं. १":
+                selected_parent = p
+                break
+
+        if p_name == parent_name or p_name_ne == parent_name:
             selected_parent = p
             break
 

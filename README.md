@@ -122,9 +122,7 @@ class RegistrationForm(forms.Form):
 
 ## 🗺️ Address Management (Chained Selects)
 
-Model Nepal's administrative structure with automatic filtering: Province → District → Municipality.
-
-### Step 1: Define Fields
+Model Nepal's administrative structure with automatic filtering: Province → District → Municipality. This works out-of-the-box without any extra URL configuration.
 
 ```python
 from django_nepkit import ProvinceField, DistrictField, MunicipalityField
@@ -135,22 +133,8 @@ class Address(models.Model):
     district = DistrictField()
     municipality = MunicipalityField()
 
-    # For Devanagari (बगती, काठमाडौँ, etc.)
+    # For Devanagari (बागमती, काठमाडौँ, etc.)
     # province = ProvinceField(ne=True)
-```
-
-### Step 2: Include URLs (Crucial)
-
-For the chained selects to fetch data dynamically, you **must** include the package URLs in your project's `urls.py`:
-
-```python
-# urls.py
-from django.urls import include, path
-
-urlpatterns = [
-    # ...
-    path("nepkit/", include("django_nepkit.urls")),
-]
 ```
 
 ---

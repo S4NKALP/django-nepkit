@@ -247,13 +247,15 @@ class ProvinceField(NepaliFieldMixin, models.CharField):
         # To avoid complexity, I'll peek at kwargs['ne'] if it exists.
         ne = kwargs.get("ne", False)
 
-        if ne:
-            choices = [
-                (getattr(p, "name_nepali", p.name), getattr(p, "name_nepali", p.name))
-                for p in provinces
-            ]
-        else:
-            choices = [(p.name, p.name) for p in provinces]
+        def get_p_name(p, ne):
+            name = getattr(p, "name_nepali", p.name) if ne else p.name
+            if name == "Province 1":
+                return "Koshi Province"
+            if name == "प्रदेश नं. १":
+                return "कोशी प्रदेश"
+            return name
+
+        choices = [(get_p_name(p, ne), get_p_name(p, ne)) for p in provinces]
 
         kwargs.setdefault("choices", choices)
         super().__init__(*args, **kwargs)
@@ -274,13 +276,10 @@ class DistrictField(NepaliFieldMixin, models.CharField):
         ne = kwargs.get("ne", False)
         kwargs.setdefault("max_length", 100)
 
-        if ne:
-            choices = [
-                (getattr(d, "name_nepali", d.name), getattr(d, "name_nepali", d.name))
-                for d in districts
-            ]
-        else:
-            choices = [(d.name, d.name) for d in districts]
+        def get_d_name(d, ne):
+            return getattr(d, "name_nepali", d.name) if ne else d.name
+
+        choices = [(get_d_name(d, ne), get_d_name(d, ne)) for d in districts]
 
         kwargs.setdefault("choices", choices)
         super().__init__(*args, **kwargs)
@@ -298,13 +297,10 @@ class MunicipalityField(NepaliFieldMixin, models.CharField):
         ne = kwargs.get("ne", False)
         kwargs.setdefault("max_length", 100)
 
-        if ne:
-            choices = [
-                (getattr(m, "name_nepali", m.name), getattr(m, "name_nepali", m.name))
-                for m in municipalities
-            ]
-        else:
-            choices = [(m.name, m.name) for m in municipalities]
+        def get_m_name(m, ne):
+            return getattr(m, "name_nepali", m.name) if ne else m.name
+
+        choices = [(get_m_name(m, ne), get_m_name(m, ne)) for m in municipalities]
 
         kwargs.setdefault("choices", choices)
         super().__init__(*args, **kwargs)

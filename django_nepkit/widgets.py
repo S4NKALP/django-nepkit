@@ -42,7 +42,10 @@ class NepaliWidgetMixin:
 
 class ChainedSelectWidget(forms.Select):
     class Media:
-        js = ("django_nepkit/js/address-chaining.js",)
+        js = (
+            "django_nepkit/js/nepal-data.js",
+            "django_nepkit/js/address-chaining.js",
+        )
 
 
 class ProvinceSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
@@ -53,13 +56,23 @@ class ProvinceSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
 class DistrictSelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
     def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-district-select")
-        attrs["data-url"] = reverse_lazy("django_nepkit:district-list")
+        try:
+            url = reverse_lazy("django_nepkit:district-list")
+            str(url)  # Force evaluation to catch NoReverseMatch
+            attrs["data-url"] = url
+        except Exception:
+            pass
 
 
 class MunicipalitySelectWidget(NepaliWidgetMixin, ChainedSelectWidget):
     def _configure_attrs(self, attrs):
         _append_css_class(attrs, "nepkit-municipality-select")
-        attrs["data-url"] = reverse_lazy("django_nepkit:municipality-list")
+        try:
+            url = reverse_lazy("django_nepkit:municipality-list")
+            str(url)  # Force evaluation to catch NoReverseMatch
+            attrs["data-url"] = url
+        except Exception:
+            pass
 
 
 class NepaliDatePickerWidget(NepaliWidgetMixin, forms.TextInput):
