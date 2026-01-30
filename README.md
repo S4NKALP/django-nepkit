@@ -1,8 +1,13 @@
 # 🇳🇵 django-nepkit
 
+<div align="center">
+
 [![PyPI version](https://badge.fury.io/py/django-nepkit.svg)](https://badge.fury.io/py/django-nepkit)
 [![Python Versions](https://img.shields.io/pypi/pyversions/django-nepkit.svg)](https://pypi.org/project/django-nepkit/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
+
 
 **The essential toolkit for Django developers building for Nepal.**
 
