@@ -169,11 +169,16 @@ Just like standard Django fields, pass `null=True, blank=True` to any `django-ne
 
 No. The `YYYY-MM-DD` format is hardcoded to ensure database-level sorting and indexing work consistently. However, you can change the **display** format via global settings or template filters.
 
-**Q: How do I get Devanagari (local script) digits in my API?**
+**Q: Can I use Devanagari output?**
 
-In your Serializer field or Model field, pass `ne=True`.
+Yes. Pass `ne=True` to fields, forms, or serializers.
+
+**Q: Can I display the datepicker in English?**
+
+Yes. By default, if you pass `en=True` (or if `DEFAULT_LANGUAGE` is set to `"en"`), the datepicker will display month and day names in English instead of Devanagari script.
+
 ```python
-birth_date = NepaliDateField(ne=True)
+birth_date = NepaliDateField(en=True)  # English month/day names in picker
 ```
 
 **Q: Is the location data up to date?**
@@ -204,6 +209,13 @@ We welcome contributions and feedback from the community.
 
 ---
 
-## 📄 License
+## 🙏 Credits
+
+This library is built on top of excellent open-source projects:
+
+- **[nepali](https://github.com/opensource-nepal/py-nepali)** by [@opensource-nepal](https://github.com/opensource-nepal) - Provides the core `nepalidate`, `nepalidatetime` objects and regional location data (Provinces, Districts, Municipalities).
+- **[Nepali Datepicker](https://nepalidatepicker.sajanmaharjan.com.np/)** by [Sajan Maharjan](https://github.com/sajanm/nepali-date-picker) - Powers the beautiful BS date picker widget in the Django Admin.
+
+---
 
 MIT License. Designed for the local Django ecosystem.

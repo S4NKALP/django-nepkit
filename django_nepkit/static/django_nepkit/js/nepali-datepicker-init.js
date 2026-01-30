@@ -54,9 +54,16 @@
                 closeOnDateSelect: true
             };
 
-            // Use Devanagari if data-ne attribute is present
-            if (el.dataset.ne === 'true') {
+            // Determine language based on data attributes
+            var useNepali = el.dataset.ne === 'true';
+            var useEnglish = el.dataset.en === 'true';
+
+            if (useNepali) {
+                // Devanagari digits and Nepali month/day names
                 options.unicodeDate = true;
+            } else if (useEnglish || (!useNepali && !el.dataset.ne)) {
+                // English month/day names and digits
+                options.language = 'english';
             }
 
             // Nepali Datepicker v5 exposes `element.NepaliDatePicker(options)`
