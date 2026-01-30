@@ -6,7 +6,7 @@
 - [x] **Unicode Helpers**: Built-in filters for converting common English text/numbers into Nepali Unicode equivalent.
 
 ## Integration
-- [ ] **REST API Enhancements**: Add more specialized DRF serializers for range filters and localized outputs.
+- [x] **REST API Enhancements**: Add more specialized DRF serializers for range filters and localized outputs.
 
 ## Address & Location
 - [ ] **Address Normalization**: Implement a way to verify or suggest standardized Nepali addresses.

@@ -4,7 +4,18 @@ from rest_framework import viewsets, filters as drf_filters
 from django_filters import rest_framework as django_filters
 from django_nepkit.filters import NepaliDateYearFilter, NepaliDateMonthFilter
 from .models import Person, Citizen, AuditedPerson, Transaction
-from .serializers import PersonSerializer, CitizenSerializer, AuditedPersonSerializer
+from .serializers import (
+    PersonSerializer,
+    CitizenSerializer,
+    AuditedPersonSerializer,
+    TransactionSerializer,
+)
+from django_nepkit.filters import (
+    NepaliDateYearFilter,
+    NepaliDateMonthFilter,
+    NepaliCurrencyRangeFilter,
+    NepaliDateRangeFilter,
+)
 
 
 class PersonForm(forms.ModelForm):
@@ -110,3 +121,19 @@ class AuditedPersonViewSet(viewsets.ModelViewSet):
     filter_backends = [drf_filters.SearchFilter, drf_filters.OrderingFilter]
     search_fields = ["name", "birth_date"]
     ordering_fields = ["created_at"]
+
+
+class TransactionViewSet(viewsets.ModelViewSet):
+    queryset = Transaction.objects.all()
+    serializer_class = TransactionSerializer
+    filter_backends = [django_filters.DjangoFilterBackend]
+
+    class TransactionFilter(django_filters.FilterSet):
+        amount_range = NepaliCurrencyRangeFilter(field_name="amount")
+        date_range = NepaliDateRangeFilter(field_name="date")
+
+        class Meta:
+            model = Transaction
+            fields = ["title", "amount", "date"]
+
+    filterset_class = TransactionFilter

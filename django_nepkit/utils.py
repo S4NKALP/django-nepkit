@@ -89,12 +89,14 @@ def get_municipalities_by_district(district_name, ne=False, en=True):
     return _get_location_children(districts, district_name, "municipalities", ne=ne)
 
 
-def format_nepali_currency(number: Any, currency_symbol: str = "Rs.") -> str:
+def format_nepali_currency(
+    number: Any, currency_symbol: str = "Rs.", ne: bool = False
+) -> str:
     """
     Formats a number with Nepali-style commas and optional currency symbol.
     Eg. 1234567 -> Rs. 12,34,567
     """
-    from nepali.number import add_comma
+    from nepali.number import add_comma, english_to_nepali
 
     if number is None:
         return ""
@@ -114,6 +116,9 @@ def format_nepali_currency(number: Any, currency_symbol: str = "Rs.") -> str:
         res = formatted_integer
         if decimal_part:
             res = f"{res}.{decimal_part}"
+
+        if ne:
+            res = english_to_nepali(res)
 
         if currency_symbol:
             return f"{currency_symbol} {res}"

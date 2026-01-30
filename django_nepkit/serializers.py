@@ -16,6 +16,7 @@ from django_nepkit.conf import nepkit_settings
 from django_nepkit.utils import (
     BS_DATE_FORMAT,
     BS_DATETIME_FORMAT,
+    format_nepali_currency,
     try_parse_nepali_date,
     try_parse_nepali_datetime,
 )
@@ -125,3 +126,85 @@ class NepaliDateTimeSerializerField(BaseNepaliBSField):
 
     format = BS_DATETIME_FORMAT
     nepali_type = nepalidatetime
+
+
+class NepaliCurrencySerializerField(serializers.Field):
+    """
+    API field for Nepali Currency.
+    Formats decimal values with Nepali-style commas.
+    """
+
+    def __init__(self, currency_symbol="Rs.", ne=None, **kwargs):
+        self.currency_symbol = currency_symbol
+        self.ne = ne
+        super().__init__(**kwargs)
+
+    def to_representation(self, value):
+        if value is None:
+            return None
+        
+        ne = self.ne
+        if ne is None:
+            ne = self.context.get("ne", nepkit_settings.DEFAULT_LANGUAGE == "ne")
+
+        return format_nepali_currency(value, currency_symbol=self.currency_symbol, ne=ne)
+
+    def to_internal_value(self, data):
+        # We don't support converting back from formatted string to decimal here
+        # Users should send raw decimal/float values for input.
+        return data
+
+
+class NepaliLocalizedSerializerMixin:
+    """
+    A mixin for ModelSerializer that automatically adds localized counterparts
+    for eligible fields if `ne=True` is passed in the context.
+    Eligible fields: NepaliDateField, NepaliDateTimeField, NepaliCurrencyField.
+
+    Usage:
+        class MySerializer(NepaliLocalizedSerializerMixin, serializers.ModelSerializer):
+            ...
+    """
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)  # type: ignore[misc]
+        ne = self.context.get("ne", False)
+        if not ne:
+            return ret
+
+        from django_nepkit.models import (
+            NepaliCurrencyField,
+            NepaliDateField,
+            NepaliDateTimeField,
+        )
+
+        model = getattr(self.Meta, "model", None)  # type: ignore[attr-defined]
+        if not model:
+            return ret
+
+        for field_name, value in list(ret.items()):
+            try:
+                model_field = model._meta.get_field(field_name)
+                localized_name = f"{field_name}_ne"
+
+                if localized_name in ret:
+                    continue
+
+                if isinstance(model_field, NepaliDateField):
+                    raw_val = getattr(instance, field_name)
+                    if hasattr(raw_val, "strftime_ne"):
+                        ret[localized_name] = raw_val.strftime_ne(BS_DATE_FORMAT)
+
+                elif isinstance(model_field, NepaliDateTimeField):
+                    raw_val = getattr(instance, field_name)
+                    if hasattr(raw_val, "strftime_ne"):
+                        ret[localized_name] = raw_val.strftime_ne(BS_DATETIME_FORMAT)
+
+                elif isinstance(model_field, NepaliCurrencyField):
+                    ret[localized_name] = format_nepali_currency(
+                        value, currency_symbol="", ne=True
+                    )
+            except Exception:
+                continue
+
+        return ret

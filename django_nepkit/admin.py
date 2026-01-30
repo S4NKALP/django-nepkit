@@ -231,12 +231,12 @@ class NepaliAdminMixin:
 
         return format_nepali_datetime(datetime_value, format_string, ne=ne)
 
-    def format_nepali_currency(self, value, currency_symbol="Rs.", **kwargs):
+    def format_nepali_currency(self, value, currency_symbol="Rs.", ne=False, **kwargs):
         """
         Format a number with Nepali-style commas.
         Available as a method on admin classes using this mixin.
         """
-        return format_nepali_currency(value, currency_symbol=currency_symbol)
+        return format_nepali_currency(value, currency_symbol=currency_symbol, ne=ne)
 
 
 class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):

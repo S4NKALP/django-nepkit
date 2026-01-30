@@ -59,14 +59,55 @@ class NepaliDateMonthFilter(filters.NumberFilter):
         return qs
 
 
-class NepaliDateRangeFilter(filters.BaseRangeFilter, filters.CharFilter):
+class NepaliDateRangeFilter(filters.CharFilter):
     """
     A filter for `NepaliDateField` that allows filtering by a range of BS dates.
-    Expects two BS strings separated by a comma (e.g., "2080-01-01,2080-12-30").
+    Supports:
+    - "start,end" -> range
+    - "start," -> greater than or equal
+    - ",end" -> less than or equal
+    - "date" -> exact match
     """
 
     def filter(self, qs: QuerySet, value: Any) -> QuerySet:
         if value:
-            if len(value) == 2:
-                return qs.filter(**{f"{self.field_name}__range": (value[0], value[1])})
+            parts = [p.strip() for p in str(value).split(",")]
+            if len(parts) == 1:
+                return qs.filter(**{self.field_name: parts[0]})
+            if len(parts) == 2:
+                if parts[0] and parts[1]:
+                    return qs.filter(
+                        **{f"{self.field_name}__range": (parts[0], parts[1])}
+                    )
+                if parts[0]:
+                    return qs.filter(**{f"{self.field_name}__gte": parts[0]})
+                if parts[1]:
+                    return qs.filter(**{f"{self.field_name}__lte": parts[1]})
+        return qs
+
+
+class NepaliCurrencyRangeFilter(filters.CharFilter):
+    """
+    A filter for `NepaliCurrencyField` that allows range filtering.
+    Supports:
+    - "min,max" -> range
+    - "min," -> greater than or equal
+    - ",max" -> less than or equal
+    - "value" -> exact match
+    """
+
+    def filter(self, qs: QuerySet, value: Any) -> QuerySet:
+        if value:
+            parts = [p.strip() for p in str(value).split(",")]
+            if len(parts) == 1:
+                return qs.filter(**{self.field_name: parts[0]})
+            if len(parts) == 2:
+                if parts[0] and parts[1]:
+                    return qs.filter(
+                        **{f"{self.field_name}__range": (parts[0], parts[1])}
+                    )
+                if parts[0]:
+                    return qs.filter(**{f"{self.field_name}__gte": parts[0]})
+                if parts[1]:
+                    return qs.filter(**{f"{self.field_name}__lte": parts[1]})
         return qs
