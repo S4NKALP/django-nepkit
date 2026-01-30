@@ -239,3 +239,12 @@ class MunicipalityField(BaseLocationField):
     description = _("Nepali Municipality")
     source = municipalities
     widget_class = MunicipalitySelectWidget
+
+
+class NepaliCurrencyField(models.DecimalField):
+    description = _("Nepali Currency")
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("max_digits", 19)
+        kwargs.setdefault("decimal_places", 2)
+        super().__init__(*args, **kwargs)

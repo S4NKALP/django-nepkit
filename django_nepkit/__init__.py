@@ -6,6 +6,7 @@ from .models import (
     ProvinceField,
     DistrictField,
     MunicipalityField,
+    NepaliCurrencyField,
 )
 from .admin import (
     NepaliDateFilter,
@@ -30,4 +31,5 @@ __all__ = [
     "format_nepali_datetime",
     "NepaliModelAdmin",
     "NepaliAdminMixin",
+    "NepaliCurrencyField",
 ]

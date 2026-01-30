@@ -12,4 +12,5 @@ router.register("api/audited", views.AuditedPersonViewSet, basename="audited-api
 urlpatterns = [
     path("", views.person_list, name="person-list"),
     path("add/", views.person_create, name="person-create"),
+    path("transactions/add/", views.transaction_create, name="transaction-create"),
 ] + router.urls

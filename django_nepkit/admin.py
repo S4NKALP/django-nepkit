@@ -3,10 +3,11 @@ from django.utils.translation import gettext_lazy as _
 from nepali.datetime import nepalidate, nepalidatetime
 
 from django_nepkit.conf import nepkit_settings
-from django_nepkit.models import NepaliDateField, NepaliDateTimeField
+from django_nepkit.models import NepaliDateField, NepaliDateTimeField, NepaliCurrencyField
 from django_nepkit.utils import (
     try_parse_nepali_date,
     try_parse_nepali_datetime,
+    format_nepali_currency,
 )
 from django_nepkit.utils import BS_DATE_FORMAT
 
@@ -226,6 +227,13 @@ class NepaliAdminMixin:
 
         return format_nepali_datetime(datetime_value, format_string, ne=ne)
 
+    def format_nepali_currency(self, value, currency_symbol="Rs.", **kwargs):
+        """
+        Format a number with Nepali-style commas.
+        Available as a method on admin classes using this mixin.
+        """
+        return format_nepali_currency(value, currency_symbol=currency_symbol)
+
 
 class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
     """
@@ -272,6 +280,9 @@ class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
     def _make_nepali_datetime_display(self, field_name):
         return self._make_nepali_display(field_name, self.format_nepali_datetime)
 
+    def _make_nepali_currency_display(self, field_name):
+        return self._make_nepali_display(field_name, self.format_nepali_currency)
+
     def get_list_display(self, request):
         list_display = super().get_list_display(request)
         result = []
@@ -286,6 +297,9 @@ class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
                     continue
                 if isinstance(field, NepaliDateTimeField):
                     result.append(self._make_nepali_datetime_display(item))
+                    continue
+                if isinstance(field, NepaliCurrencyField):
+                    result.append(self._make_nepali_currency_display(item))
                     continue
             except Exception:
                 pass

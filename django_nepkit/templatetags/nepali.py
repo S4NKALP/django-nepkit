@@ -66,3 +66,24 @@ def nepali_humanize(value, threshold=None, format_str=None):
         kwargs["format"] = format_str
 
     return nepalihumanize(value, **kwargs)
+
+
+@register.filter
+def nepali_currency(value, currency_symbol="Rs."):
+    """Format a number with Nepali-style commas and optional currency symbol."""
+    from django_nepkit.utils import format_nepali_currency
+    return format_nepali_currency(value, currency_symbol=currency_symbol)
+
+
+@register.filter
+def nepali_words(value):
+    """Convert a number to Nepali words."""
+    from django_nepkit.utils import number_to_nepali_words
+    return number_to_nepali_words(value)
+
+
+@register.filter
+def nepali_unicode(value):
+    """Convert English digits to Nepali Unicode."""
+    from django_nepkit.utils import english_to_nepali_unicode
+    return english_to_nepali_unicode(value)

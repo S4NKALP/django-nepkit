@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from rest_framework import viewsets, filters as drf_filters
 from django_filters import rest_framework as django_filters
 from django_nepkit.filters import NepaliDateYearFilter, NepaliDateMonthFilter
-from .models import Person, Citizen, AuditedPerson
+from .models import Person, Citizen, AuditedPerson, Transaction
 from .serializers import PersonSerializer, CitizenSerializer, AuditedPersonSerializer
 
 
@@ -26,7 +26,12 @@ class PersonForm(forms.ModelForm):
 
 def person_list(request):
     persons = Person.objects.all()
-    return render(request, "demo/person_list.html", {"persons": persons})
+    transactions = Transaction.objects.all()
+    return render(
+        request,
+        "demo/person_list.html",
+        {"persons": persons, "transactions": transactions},
+    )
 
 
 def person_create(request):
@@ -38,6 +43,25 @@ def person_create(request):
     else:
         form = PersonForm()
     return render(request, "demo/person_form.html", {"form": form})
+
+
+class TransactionForm(forms.ModelForm):
+    class Meta:
+        model = Transaction
+        fields = ["title", "amount"]
+
+
+def transaction_create(request):
+    if request.method == "POST":
+        form = TransactionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("demo:person-list")
+    else:
+        form = TransactionForm()
+    return render(
+        request, "demo/person_form.html", {"form": form, "title": "Add Transaction"}
+    )
 
 
 # --- API Support (DRF) ---

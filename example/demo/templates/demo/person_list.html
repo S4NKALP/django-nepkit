@@ -12,7 +12,8 @@
 </head>
 <body>
     <h1>Person List</h1>
-    <a href="{% url 'demo:person-create' %}">Add New Person</a>
+    <a href="{% url 'demo:person-create' %}">Add New Person</a> | 
+    <a href="{% url 'demo:transaction-create' %}">Add New Transaction</a>
     <hr>
     <table>
         <thead>
@@ -34,16 +35,16 @@
             {% for person in persons %}
             <tr>
                 <td>{{ person.name }}</td>
+                <td>{{ person.birth_date_ne }}</td>
                 <td>{{ person.birth_date }}</td>
-                <td>{{ person.birth_date_en }}</td>
                 <td>{{ person.registration_time }}</td>
                 <td>{{ person.phone_number }}</td>
+                <td>{{ person.province_ne }}</td>
                 <td>{{ person.province }}</td>
-                <td>{{ person.province_en }}</td>
+                <td>{{ person.district_ne }}</td>
                 <td>{{ person.district }}</td>
-                <td>{{ person.district_en }}</td>
+                <td>{{ person.municipality_ne }}</td>
                 <td>{{ person.municipality }}</td>
-                <td>{{ person.municipality_en }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -52,5 +53,46 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <br><hr>
+
+    <h1>Transaction List</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Amount (Raw)</th>
+                <th>Amount (Formatted)</th>
+                <th>Amount (Words)</th>
+                <th>Date</th>
+                <th>Unicode Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.title }}</td>
+                <td>{{ tx.amount }}</td>
+                <td>{{ tx.amount|nepali_currency }}</td>
+                <td>{{ tx.amount|nepali_words }}</td>
+                <td>{{ tx.date }}</td>
+                <td>{{ tx.title|nepali_unicode }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No transactions found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <br><hr>
+
+    <h2>Quick Helpers Demo</h2>
+    <ul>
+        <li><strong>nepali_currency:</strong> 112000 -> {{ 112000|nepali_currency }}</li>
+        <li><strong>nepali_words:</strong> 1234 -> {{ 1234|nepali_words }}</li>
+        <li><strong>nepali_unicode:</strong> "Total: 12345" -> {{ "Total: 12345"|nepali_unicode }}</li>
+    </ul>
 </body>
 </html>

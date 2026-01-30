@@ -7,6 +7,7 @@ from django_nepkit import (
     ProvinceField,
     DistrictField,
     MunicipalityField,
+    NepaliCurrencyField,
 )
 
 
@@ -52,3 +53,12 @@ class AuditedPerson(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Transaction(models.Model):
+    title = models.CharField(max_length=100)
+    amount = NepaliCurrencyField()
+    date = NepaliDateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.amount}"

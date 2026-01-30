@@ -7,7 +7,7 @@ from django_nepkit import (
     NepaliMonthFilter,
 )
 
-from .models import Person, Citizen, AuditedPerson
+from .models import Person, Citizen, AuditedPerson, Transaction
 
 
 # Example 1: Basic setup
@@ -58,3 +58,9 @@ class CitizenAdmin(NepaliModelAdmin):
     list_display = ("name", "province", "district", "municipality")
     # Filters still work with HTMX
     list_filter = ("province", "district")
+
+
+@admin.register(Transaction)
+class TransactionAdmin(NepaliModelAdmin):
+    list_display = ("title", "amount", "date")
+    list_filter = (("date", NepaliDateFilter),)

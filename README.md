@@ -22,6 +22,8 @@ Building software for local requirements comes with unique challenges, from hand
 - **📅 BS Date Support**: Model fields for `nepalidate` and `nepalidatetime` objects.
 - **🗺️ Regional Locations**: Pre-defined Provinces, Districts, and Municipalities.
 - **📱 Phone Validation**: Patterns for local mobile and landline numbers.
+- **💰 Currency Formatting**: `NepaliCurrencyField` with automatic Lakhs/Crores comma placement.
+- **🔤 Numbers to Words**: Convert digits into Nepali text representation.
 - **🔌 Admin Integration**: Automatic setup for datepickers and localized list displays.
 - **🚀 API Support**: DRF Serializers and Filtering backends for BS searching and ordering.
 - **⚡ Location Chaining**: Address linking via client side JS or server driven HTMX.
@@ -133,6 +135,36 @@ from django_nepkit.filters import NepaliDateYearFilter
 class ProfileFilter(filters.FilterSet):
     # Filter by BS Year (e.g., /api/profiles/?year=2081)
     year = NepaliDateYearFilter(field_name="birth_date")
+```
+
+---
+
+## 💰 Formatting & Helpers
+
+### 1. Currency & Numbers
+Use `NepaliCurrencyField` for automatic formatting in the admin and templates.
+
+```python
+from django_nepkit import NepaliCurrencyField
+
+class Transaction(models.Model):
+    amount = NepaliCurrencyField() # Defaults to 19 digits, 2 decimals
+```
+
+### 2. Template Filters
+Load the tags to use localized formatting in your templates.
+
+```html
+{% load nepali %}
+
+<!-- Comma formatting: Rs. 1,12,000.00 -->
+<p>{{ 112000 | nepali_currency }}</p>
+
+<!-- Numbers to Words: एक सय तेईस -->
+<p>{{ 123 | nepali_words }}</p>
+
+<!-- English to Nepali Digits: १२३ -->
+<p>{{ "123" | nepali_unicode }}</p>
 ```
 
 ---
