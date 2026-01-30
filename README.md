@@ -11,7 +11,7 @@
 
 </div>
 
-Building software for local requirements comes with unique challenges—from handling BS dates to managing the regional administrative hierarchy. `django-nepkit` provides solutions for these requirements directly within the Django ecosystem.
+Building software for local requirements comes with unique challenges, from handling BS dates to managing the regional administrative hierarchy. `django-nepkit` provides solutions for these requirements directly within the Django ecosystem.
 
 ![Showcase](docs/showcase.gif)
 
@@ -24,7 +24,7 @@ Building software for local requirements comes with unique challenges—from han
 - **📱 Phone Validation**: Patterns for local mobile and landline numbers.
 - **🔌 Admin Integration**: Automatic setup for datepickers and localized list displays.
 - **🚀 API Support**: DRF Serializers and Filtering backends for BS searching and ordering.
-- **⚡ Location Chaining**: Address linking via client-side JS or server-driven HTMX.
+- **⚡ Location Chaining**: Address linking via client side JS or server driven HTMX.
 
 ---
 
@@ -109,9 +109,9 @@ class Address(models.Model):
     municipality = MunicipalityField()
 ```
 
-### Server-Side Chaining (HTMX)
+### Server Side Chaining (HTMX)
 
-Enable `htmx=True` for a server-driven experience.
+Enable `htmx=True` for a server driven experience.
 
 > [!IMPORTANT]
 > **HTMX Setup:**
@@ -142,11 +142,11 @@ class ProfileFilter(filters.FilterSet):
 This library is engineered for performance, data integrity, and local compliance.
 
 ### 1. The "Source of Truth" Strategy
-We avoid on-the-fly AD-to-BS conversion during database queries because it is computationally expensive and prone to logical drift (due to lunar calendar offsets).
+We avoid on-the-fly `AD to BS` conversion during database queries because it is computationally expensive and prone to logical drift (due to lunar calendar offsets).
 - **Storage**: All BS dates are stored as `VARCHAR(10)` in `YYYY-MM-DD` format.
-- **Sorting**: Because `YYYY` is at the start, string-based database sorting (ascending/descending) accurately matches chronological order.
+- **Sorting**: Because `YYYY` is at the start, string based database sorting (ascending/descending) accurately matches chronological order.
 - **Indexability**: Standard B-Tree indexes work perfectly on these fields without requiring custom database functions.
-- **Timezone Safety**: Dates are stored without time components, making them immune to server-side timezone shifts during saving.
+- **Timezone Safety**: Dates are stored without time components, making them immune to server side timezone shifts during saving.
 
 ### 2. Python Object Mapping
 While data is stored as strings, it is automatically hydrated into rich Python objects.
@@ -167,7 +167,7 @@ Just like standard Django fields, pass `null=True, blank=True` to any `django-ne
 
 **Q: Can I change the database storage format?**
 
-No. The `YYYY-MM-DD` format is hardcoded to ensure database-level sorting and indexing work consistently. However, you can change the **display** format via global settings or template filters.
+No. The `YYYY-MM-DD` format is hardcoded to ensure database level sorting and indexing work consistently. However, you can change the **display** format via global settings or template filters.
 
 **Q: Can I use Devanagari output?**
 
@@ -211,7 +211,7 @@ We welcome contributions and feedback from the community.
 
 ## 🙏 Credits
 
-This library is built on top of excellent open-source projects:
+This library is built on top of excellent open source projects:
 
 - **[nepali](https://github.com/opensource-nepal/py-nepali)** by [@opensource-nepal](https://github.com/opensource-nepal) - Provides the core `nepalidate`, `nepalidatetime` objects and regional location data (Provinces, Districts, Municipalities).
 - **[Nepali Datepicker](https://nepalidatepicker.sajanmaharjan.com.np/)** by [Sajan Maharjan](https://github.com/sajanm/nepali-date-picker) - Powers the beautiful BS date picker widget in the Django Admin.
