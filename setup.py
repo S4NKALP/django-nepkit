@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="django-nepkit",
-    version="0.1.0",
+    version="0.2.0",
     include_package_data=True,
     author="Sankalp Tharu",
     author_email="sankalptharu50028@gmail.com",
@@ -30,7 +30,7 @@ setup(
     python_requires=">=3.11",
     packages=find_packages(exclude=("tests*",)),
     install_requires=[
-        "django>=4.2",
+        "django>=4.2,<6.0",
         "nepali>=1.1.3",
     ],
     extras_require={
