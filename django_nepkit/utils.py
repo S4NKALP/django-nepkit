@@ -47,7 +47,6 @@ def _get_location_children(parent_list, parent_name, child_attr, ne=False):
         p_name = p.name
         p_name_ne = getattr(p, "name_nepali", None)
 
-
         if p_name == parent_name or p_name_ne == parent_name:
             selected_parent = p
             break
@@ -329,7 +328,6 @@ def normalize_address(address_string: str) -> dict[str, Optional[str]]:
             or token_lower == name_eng.lower()
         ):
             return True
-
 
         # Partial matches for English (e.g., "Pokhara" in "Pokhara Metropolitan City")
         # Only if token is at least 4 characters to avoid too many false positives

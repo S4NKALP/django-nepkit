@@ -320,7 +320,7 @@ requires-dist = [
     { name = "django-filter", marker = "extra == 'drf'", specifier = ">=23.1" },
     { name = "djangorestframework", specifier = ">=3.16.1" },
     { name = "djangorestframework", marker = "extra == 'drf'", specifier = ">=3.14" },
-    { name = "nepali", specifier = ">=1.1.3" },
+    { name = "nepali", specifier = ">=1.2.0" },
 ]
 provides-extras = ["drf"]
 
