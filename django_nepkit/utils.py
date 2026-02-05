@@ -47,15 +47,6 @@ def _get_location_children(parent_list, parent_name, child_attr, ne=False):
         p_name = p.name
         p_name_ne = getattr(p, "name_nepali", None)
 
-        # Handle province name variations
-        if parent_name == "Koshi Province":
-            if p_name == "Province 1":
-                selected_parent = p
-                break
-        elif parent_name == "कोशी प्रदेश":
-            if p_name_ne == "प्रदेश नं. १":
-                selected_parent = p
-                break
 
         if p_name == parent_name or p_name_ne == parent_name:
             selected_parent = p
@@ -339,12 +330,6 @@ def normalize_address(address_string: str) -> dict[str, Optional[str]]:
         ):
             return True
 
-        # Handle "Province 1" -> "Koshi" mapping
-        if (name_eng == "Province 1" and "koshi" in token_lower) or (
-            name_nep_norm == normalize_nepali("प्रदेश नं. १")
-            and "कोशी" in normalized_token
-        ):
-            return True
 
         # Partial matches for English (e.g., "Pokhara" in "Pokhara Metropolitan City")
         # Only if token is at least 4 characters to avoid too many false positives
@@ -402,12 +387,7 @@ def normalize_address(address_string: str) -> dict[str, Optional[str]]:
         if not found_province:
             found_province = found_district.province
 
-    if found_province:
-        # Handle "Province 1" -> "Koshi Province" consistency
-        name = found_province.name
-        if name == "Province 1":
-            name = "Koshi Province"
-        result["province"] = name
+        result["province"] = found_province.name
 
     # Check for Nepali context
     is_nepali = any(
@@ -419,9 +399,6 @@ def normalize_address(address_string: str) -> dict[str, Optional[str]]:
         if found_district:
             result["district"] = found_district.name_nepali
         if found_province:
-            name = found_province.name_nepali
-            if name == "प्रदेश नं. १":
-                name = "कोशी प्रदेश"
-            result["province"] = name
+            result["province"] = found_province.name_nepali
 
     return result

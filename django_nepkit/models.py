@@ -206,13 +206,7 @@ class BaseLocationField(NepaliFieldMixin, models.CharField):
         return [(self._get_name(item, ne), self._get_name(item, ne)) for item in source]
 
     def _get_name(self, item, ne):
-        name = getattr(item, "name_nepali", item.name) if ne else item.name
-        # Handle name variations and Koshi Province mapping
-        if name == "Province 1":
-            return "Koshi Province"
-        if name == "प्रदेश नं. १":
-            return "कोशी प्रदेश"
-        return name
+        return getattr(item, "name_nepali", item.name) if ne else item.name
 
     def formfield(self, **kwargs):
         widget_cls = getattr(self, "widget_class", None)
