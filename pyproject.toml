@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "django-nepkit"
-version = "0.2.0"
+version = "0.2.1"
 description = "Django Nepali date, time, phone, and address fields with helpers."
 readme = "README.md"
 authors = [
