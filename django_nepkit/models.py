@@ -7,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 from nepali.datetime import nepalidate, nepalidatetime
 from nepali.locations import districts, municipalities, provinces
 
-from django_nepkit.forms import NepaliDateFormField
 from django_nepkit.utils import (
     BS_DATE_FORMAT,
     BS_DATETIME_FORMAT,
@@ -172,6 +171,9 @@ class NepaliDateField(BaseNepaliBSField):
     parse_func = staticmethod(try_parse_nepali_date)
 
     def formfield(self, **kwargs):
+        # Import here to avoid circular dependency
+        from django_nepkit.forms import NepaliDateFormField
+
         kwargs.setdefault("form_class", NepaliDateFormField)
         return super().formfield(**kwargs)
 

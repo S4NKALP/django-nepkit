@@ -1,3 +1,21 @@
+## V.2.1.0 — 2027-02-05
+
+### ✨ Features
+
+- upgrade nepali package to 1.2.0 and remove hardcoded Koshi Province mapping
+
+### ♻️ Refactoring
+
+- remove code redundancy and improve maintainability
+- extract duplicate view logic into reusable helper functions in views.py
+- create constants.py for centralized hardcoded values (Nepali words, placeholders)
+- simplify number_to_nepali_words function from 157 to 42 lines
+- refactor normalize_address with extracted helper functions
+- add lang_utils.py for consistent language parameter handling
+- reduce JavaScript duplication in address-chaining.js with helper functions
+- move circular import from module level to method scope in models.py
+- remove ~160+ lines of redundant code while preserving all logic
+
 ## V.2.0.0 — 2026-01-31
 
 ### ✨ Features
