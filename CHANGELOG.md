@@ -1,4 +1,4 @@
-## V.2.1.0 — 2027-02-05
+## V.0.2.1 — 2027-02-05
 
 ### ✨ Features
 
@@ -16,7 +16,7 @@
 - move circular import from module level to method scope in models.py
 - remove ~160+ lines of redundant code while preserving all logic
 
-## V.2.0.0 — 2026-01-31
+## V.0.2.0 — 2026-01-31
 
 ### ✨ Features
 
@@ -41,6 +41,6 @@
 - added comprehensive pytest test suite with 67% coverage
 - global project refinement, DRY consolidation, and documentation overhaul
 
-## V.1.0.0 — 2026-01-29
+## V.0.1.0 — 2026-01-29
 
 - Initial release
