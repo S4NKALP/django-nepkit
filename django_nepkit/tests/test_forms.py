@@ -50,7 +50,6 @@ class TestNepaliDateFormField:
         with pytest.raises(ValidationError):
             field.clean("")
 
-    @pytest.mark.xfail(reason="Translation infrastructure timing issue in tests")
     def test_invalid_date_format(self):
         """Test that invalid date format raises ValidationError."""
         field = NepaliDateFormField()
