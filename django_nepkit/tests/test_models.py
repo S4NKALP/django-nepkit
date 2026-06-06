@@ -307,3 +307,64 @@ class TestNepaliTimeField:
     def test_format_value_for_display(self):
         field = NepaliTimeField()
         assert field.format_value_for_display(python_time(9, 5)) == "09:05 AM"
+
+
+class TestParseCache:
+    """``BaseNepaliBSField._parse_str`` should hit a process-level cache."""
+
+    def test_repeated_parse_hits_cache(self):
+        from django_nepkit.utils import (
+            _cached_parse_nepali_date,
+            _cached_parse_nepali_datetime,
+        )
+
+        _cached_parse_nepali_date.cache_clear()
+        _cached_parse_nepali_datetime.cache_clear()
+
+        field = NepaliDateField()
+        # First call: cache miss.
+        first = field._parse_str("2081-01-15")
+        info = _cached_parse_nepali_date.cache_info()
+        assert info.misses == 1
+        assert info.hits == 0
+        # Second call with the same string: cache hit.
+        second = field._parse_str("2081-01-15")
+        info = _cached_parse_nepali_date.cache_info()
+        assert info.hits == 1
+        assert first is second  # cached object reused
+
+    def test_datetime_field_uses_datetime_cache(self):
+        from django_nepkit.utils import (
+            _cached_parse_nepali_date,
+            _cached_parse_nepali_datetime,
+        )
+
+        _cached_parse_nepali_date.cache_clear()
+        _cached_parse_nepali_datetime.cache_clear()
+
+        field = NepaliDateTimeField()
+        result = field._parse_str("2081-01-15 10:30:00")
+        assert isinstance(result, nepalidatetime)
+        date_info = _cached_parse_nepali_date.cache_info()
+        dt_info = _cached_parse_nepali_datetime.cache_info()
+        assert dt_info.misses == 1
+        # The date cache must NOT have been touched.
+        assert date_info.misses == 0
+
+    def test_unparseable_input_caches_none(self):
+        from django_nepkit.utils import _cached_parse_nepali_date
+
+        _cached_parse_nepali_date.cache_clear()
+        field = NepaliDateField()
+        a = field._parse_str("not-a-date")
+        b = field._parse_str("not-a-date")
+        assert a is None
+        assert b is None
+        info = _cached_parse_nepali_date.cache_info()
+        # Both calls count as cache hits/misses against the same key.
+        assert info.hits >= 1
+
+    def test_non_string_passthrough(self):
+        field = NepaliDateField()
+        assert field._parse_str(None) is None
+        assert field._parse_str(2081) is None  # ints bypass the cache

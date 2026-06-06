@@ -76,6 +76,38 @@ class TestRenderOptions:
         assert "<script>x</script>" not in html
         assert "&lt;script&gt;" in html
 
+    def test_missing_keys_use_empty_string(self):
+        """Items missing ``id`` / ``text`` render an empty option, not a crash."""
+        from django_nepkit.views import _render_options
+
+        data = [{"id": "KTM"}, {"text": "Only Text"}, {}]
+        response = _render_options(data, "Select")
+        html = response.content.decode()
+        assert 'value="KTM"' in html
+        assert ">Only Text<" in html
+        # The empty item should still produce a (value-less) option.
+        assert html.count("<option") >= 3
+
+    def test_non_dict_item_does_not_crash(self):
+        """Malformed rows (e.g. a stray string) are silently skipped."""
+        from django_nepkit.views import _render_options
+
+        data = ["not-a-dict", {"id": "KTM", "text": "KTM"}, None, 42]
+        response = _render_options(data, "Select")
+        html = response.content.decode()
+        assert 'value="KTM"' in html
+
+    def test_escapes_quote_breakout_in_id_attribute(self):
+        """A ``"><img`` payload must not close the ``value="..."`` attribute."""
+        from django_nepkit.views import _render_options
+
+        data = [{"id": '"><img src=x onerror=alert(1)>', "text": "x"}]
+        response = _render_options(data, "Select")
+        html = response.content.decode()
+        assert 'value=""' not in html or "&quot;" in html
+        assert "<img" not in html
+        assert "&lt;img" in html
+
 
 class TestGetPrimaryParam:
     """Tests for _get_primary_param internal helper."""
