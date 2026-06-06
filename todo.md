@@ -37,5 +37,7 @@
 
 ## Still open / nice-to-haves
 
-- [ ] Cache parsed `BaseNepaliBSField` values per row in admin list views (perf).
-- [ ] Replace the `format_html_join` helper in `_render_options` with a `<template>`-based renderer for better escaping control.
+_Nothing left — the perf and escaping improvements below are merged._
+
+- [x] Cache parsed `BaseNepaliBSField` values per row in admin list views (perf).
+- [x] Replace the `format_html_join` helper in `_render_options` with a `<template>`-based renderer for better escaping control.

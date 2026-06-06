@@ -36,12 +36,25 @@
 - `MunicipalitySelectWidget` now also supports `htmx=True` like its
   district sibling.
 - `_render_options` escapes its HTML output via `format_html` /
-  `format_html_join` (XSS fix).
+  `format_html_join` (XSS fix).  The implementation now uses an
+  explicit per-option `format_html` call (no `format_html_join`)
+  so the attribute / text-node escaping contract is visible at the
+  call site, and a malformed row (missing keys, non-dict) no longer
+  crashes the view.
 - `BaseLocationField.choices` is now a live property that re-evaluates
   on every access from the current `nepkit_settings`.  An explicit
   `ne=True` / `ne=False` constructor arg pins the language for the
   field's lifetime (only the implicit default re-reads the setting).
   `refresh_choices()` is kept as a no-op for backwards compatibility.
+- `BaseNepaliBSField._parse_str` now routes through a process-level
+  `lru_cache(2048)` (`_cached_parse_nepali_date` /
+  `_cached_parse_nepali_datetime` in `django_nepkit.utils`).  Admin
+  list views that load thousands of rows with the same stored
+  date strings no longer re-parse them on every row.
+- `normalize_address` is now backed by an `lru_cache(1024)`-decorated
+  inner function so the heavy `_find_location_in_tokens` work runs at
+  most once per unique address string. The public function still
+  returns a fresh dict per call so callers can mutate safely.
 - `normalize_address` is now backed by an `lru_cache(1024)`-decorated
   inner function so the heavy `_find_location_in_tokens` work runs at
   most once per unique address string. The public function still
@@ -72,6 +85,8 @@
 - **`number_to_nepali_words` negative crash** — negative numbers
   now render with the `"ऋणात्मक"` prefix instead of raising
   `IndexError`.
+- **`pyproject.toml` stale version** — bumped to `0.2.2` to match
+  the release this changelog documents.
 - **`NepaliDatePickerWidget.format_value` EN-mode leak** — passing a
   `nepalidate` in English mode no longer leaks its Python repr
   (`"nepalidate(2081, 1, 15)"`) into the rendered HTML; unknown
@@ -87,6 +102,21 @@
 - **`address-chaining.js` `change`-event storm** — the init path no
   longer fires synthetic `change` events, so user-defined change
   handlers don't run during page load.
+- **`nepali-time-init.js` MutationObserver flood** — added the same
+  filter (only on `form` / `.nepkit-time-input` additions) and 50ms
+  debounce used in `address-chaining.js`, so the time input no
+  longer triggers an O(document) `initAll()` on every DOM mutation.
+- **`_make_nepali_time_display` overriding explicit `ne=False`** —
+  the admin time-display helper used to call
+  `nepkit_settings.DEFAULT_LANGUAGE` whenever `_get_field_ne_setting`
+  returned `False`, which silently overwrote a field-level
+  `NepaliTimeField(ne=False)`.  The helper now returns `None` for
+  "no opinion" so the field-level value (including an explicit
+  `False`) is preserved.
+- **`forms.NepaliDateFormField` `except Exception:`** — narrowed
+  to `(ValueError, TypeError, FormatNotMatchException)` so genuine
+  bugs (e.g. a `MemoryError` from a runaway parse) are no longer
+  silently converted into a user-friendly `ValidationError`.
 - **`address-chaining.js` MutationObserver scope** — the observer
   now only triggers init on additions of `form` /
   `.nepkit-province-select` / `.nepkit-district-select` instead of
