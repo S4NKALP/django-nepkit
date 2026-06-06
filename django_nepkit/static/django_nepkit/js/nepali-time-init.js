@@ -72,10 +72,35 @@
         initAll();
     }
 
+    // Re-initialise on DOM mutations so dynamically-injected forms
+    // (admin inlines, htmx swaps, etc.) get the same treatment.
+    // Debounced to avoid an O(document) scan on every keystroke, and
+    // filtered to only scan when a form/select ancestor was added.
     if (typeof MutationObserver !== 'undefined' && document.body) {
-        new MutationObserver(function () { initAll(); }).observe(document.body, {
-            childList: true,
-            subtree: true,
-        });
+        var debounceTimer = null;
+        new MutationObserver(function (mutations) {
+            var needsInit = false;
+            for (var i = 0; i < mutations.length; i++) {
+                var added = mutations[i].addedNodes;
+                for (var j = 0; j < added.length; j++) {
+                    var node = added[j];
+                    if (node.nodeType !== 1) continue;
+                    if (
+                        node.matches && (
+                            node.matches('form') ||
+                            node.matches('.nepkit-time-input') ||
+                            (node.querySelector && node.querySelector('.nepkit-time-input'))
+                        )
+                    ) {
+                        needsInit = true;
+                        break;
+                    }
+                }
+                if (needsInit) break;
+            }
+            if (!needsInit) return;
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function () { initAll(); }, 50);
+        }).observe(document.body, { childList: true, subtree: true });
     }
 })();
