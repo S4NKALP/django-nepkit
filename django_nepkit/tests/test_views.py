@@ -44,6 +44,38 @@ class TestRenderOptions:
         assert "Kathmandu" in html
         assert "Lalitpur" in html
 
+    def test_escapes_xss_in_id(self):
+        """District names with HTML should be escaped, not injected verbatim."""
+        from django_nepkit.views import _render_options
+
+        data = [
+            {
+                "id": '"></option><script>alert(1)</script>',
+                "text": "Bad",
+            }
+        ]
+        response = _render_options(data, "Select")
+        html = response.content.decode()
+        assert "<script>alert(1)</script>" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_escapes_xss_in_text(self):
+        from django_nepkit.views import _render_options
+
+        data = [{"id": "X", "text": "<img src=x onerror=alert(1)>"}]
+        response = _render_options(data, "Select")
+        html = response.content.decode()
+        assert "<img" not in html
+        assert "&lt;img" in html
+
+    def test_escapes_placeholder(self):
+        from django_nepkit.views import _render_options
+
+        response = _render_options([], '"><script>x</script>')
+        html = response.content.decode()
+        assert "<script>x</script>" not in html
+        assert "&lt;script&gt;" in html
+
 
 class TestGetPrimaryParam:
     """Tests for _get_primary_param internal helper."""
@@ -60,6 +92,18 @@ class TestGetPrimaryParam:
 
         # No "province" key, but has "field" key (not an internal param)
         request = rf.get("/", {"field": "Bagmati Province"})
+        value = _get_primary_param(request, "province")
+        assert value == "Bagmati Province"
+
+    def test_no_fallback_when_multiple_non_internal_params(self, rf):
+        """If the URL has multiple non-internal params, the named one wins and
+        the fallback is skipped to avoid the wrong-key foot-gun."""
+        from django_nepkit.views import _get_primary_param
+
+        request = rf.get(
+            "/",
+            {"province": "Bagmati Province", "field": "Koshi Province"},
+        )
         value = _get_primary_param(request, "province")
         assert value == "Bagmati Province"
 
@@ -112,6 +156,42 @@ class TestParseLanguageParams:
         ne, en = _parse_language_params(request)
         assert ne is False
         assert en is True
+
+    def test_unknown_value_falls_back_to_default(self, rf):
+        """Unrecognised values fall back to the project default (non-strict)."""
+        from django_nepkit.views import _parse_language_params
+
+        request = rf.get("/", {"ne": "banana"})
+        ne, en = _parse_language_params(request)
+        # Default in test settings is "en", so ne should be False.
+        assert ne is False
+        assert en is True
+
+    def test_strict_raises_on_garbage(self, rf):
+        from django_nepkit.views import _parse_language_params
+
+        request = rf.get("/", {"ne": "banana"})
+        with pytest.raises(ValueError, match="Invalid value"):
+            _parse_language_params(request, strict=True)
+
+    def test_strict_accepts_all_canonical_forms(self, rf):
+        from django_nepkit.views import _parse_language_params
+
+        for value, expected in [
+            ("true", True),
+            ("True", True),
+            ("1", True),
+            ("yes", True),
+            ("on", True),
+            ("false", False),
+            ("FALSE", False),
+            ("0", False),
+            ("no", False),
+            ("off", False),
+        ]:
+            request = rf.get("/", {"ne": value})
+            ne, _ = _parse_language_params(request, strict=True)
+            assert ne is expected, f"failed for {value!r}"
 
 
 class TestShouldReturnHtml:

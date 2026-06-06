@@ -35,3 +35,15 @@
 .ndp-container.ndp-dark .ndp-table td.ndp-today{
   color:#93c5fd; /* blue-300 */
 }
+
+/* Validation state for Nepali time inputs */
+.nepkit-time-input.nepkit-time-invalid {
+  border-color: #dc2626; /* red-600 */
+  background-color: rgba(220, 38, 38, 0.04);
+  box-shadow: 0 0 0 1px #dc2626 inset;
+}
+.nepkit-time-input.nepkit-time-invalid:focus {
+  outline: none;
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.35);
+}

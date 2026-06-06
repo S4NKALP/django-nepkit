@@ -56,6 +56,26 @@ class TestNepaliDatePickerWidget:
 
         assert "placeholder=" in html
 
+    def test_en_mode_format_value_renders_clean(self):
+        """EN mode must not leak ``nepalidate(…)`` Python reprs."""
+        from nepali.datetime import nepalidate
+
+        widget = NepaliDatePickerWidget(en=True)
+        # Pass a string (the DB-stored form); the widget should pass it
+        # through unchanged rather than calling strptime on it.
+        rendered = widget.format_value("2081-01-15")
+        assert rendered == "2081-01-15"
+        # Pass a real object and check the result doesn't contain
+        # "nepalidate(" or "nepalidate(2" — i.e. no Python repr leak.
+        rendered_obj = widget.format_value(nepalidate(2081, 1, 15))
+        assert "nepalidate" not in rendered_obj
+
+    def test_invalid_value_does_not_leak_repr(self):
+        """Unknown value types render as empty instead of a Python repr."""
+        widget = NepaliDatePickerWidget(en=True)
+        rendered = widget.format_value(object())
+        assert rendered == ""
+
 
 class TestLocationWidgets:
     """Tests for location select widgets."""
@@ -99,3 +119,22 @@ class TestLocationWidgets:
         html = widget.render("province", None)
 
         assert 'data-ne="true"' in html
+
+    def test_municipality_widget_htmx_attributes(self):
+        """Test that MunicipalitySelectWidget enables HTMX mode when htmx=True."""
+        widget = MunicipalitySelectWidget(htmx=True)
+        assert widget.htmx is True
+        assert widget._hx_url_name == "django_nepkit:municipality-list"
+        assert widget._hx_target == ".nepkit-municipality-select"
+
+    def test_unknown_type_renders_empty_for_time(self):
+        from datetime import time
+
+        from django_nepkit.widgets import NepaliTimeWidget
+
+        widget = NepaliTimeWidget(en=True)
+        # TimeField values should pass through.
+        assert widget.format_value(time(9, 30)) == "09:30 AM"
+        # Unknown types should not leak a Python repr.
+        rendered = widget.format_value(12345)
+        assert rendered == ""

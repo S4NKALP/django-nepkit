@@ -14,6 +14,7 @@ setup(
         "Framework :: Django",
         "Framework :: Django :: 4.2",
         "Framework :: Django :: 5.0",
+        "Framework :: Django :: 5.1",
         "Framework :: Django :: 6.0",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
@@ -30,10 +31,7 @@ setup(
     python_requires=">=3.11",
     packages=find_packages(exclude=("tests*",)),
     install_requires=[
-        "django>=4.2,<6.0",
+        "django>=4.2",
         "nepali>=1.1.3",
     ],
-    extras_require={
-        "drf": ["djangorestframework>=3.14"],
-    },
 )

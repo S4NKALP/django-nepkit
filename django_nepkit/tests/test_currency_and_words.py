@@ -1,7 +1,11 @@
+from decimal import Decimal
+
+import pytest
+
 from django_nepkit.utils import (
+    english_to_nepali_unicode,
     format_nepali_currency,
     number_to_nepali_words,
-    english_to_nepali_unicode,
 )
 from django_nepkit.models import NepaliCurrencyField
 
@@ -12,6 +16,34 @@ def test_format_nepali_currency():
     assert format_nepali_currency(1234567, currency_symbol="") == "12,34,567.00"
     assert format_nepali_currency(100.5) == "Rs. 100.50"
     assert format_nepali_currency(None) == ""
+
+
+def test_format_nepali_currency_preserves_decimal_precision():
+    """Large Decimals should not be truncated to float precision."""
+    value = Decimal("123456789012345.67")
+    formatted = format_nepali_currency(value)
+    assert "12,34,56,78,90,12,345.67" in formatted
+
+
+def test_format_nepali_currency_negative():
+    """Negative values render with a leading minus sign."""
+    assert format_nepali_currency(-100) == "Rs. -100.00"
+
+
+def test_format_nepali_currency_invalid_raises():
+    with pytest.raises(ValueError, match="Cannot format"):
+        format_nepali_currency("hello")
+    with pytest.raises(ValueError, match="non-finite"):
+        format_nepali_currency(float("inf"))
+    with pytest.raises(ValueError, match="non-finite"):
+        format_nepali_currency(float("nan"))
+    with pytest.raises(ValueError, match="boolean"):
+        format_nepali_currency(True)
+
+
+def test_format_nepali_currency_accepts_string_number():
+    """Strings that look like numbers are still accepted for ergonomics."""
+    assert format_nepali_currency("1234.5") == "Rs. 1,234.50"
 
 
 def test_number_to_nepali_words():
@@ -26,6 +58,21 @@ def test_number_to_nepali_words():
     assert number_to_nepali_words(100000) == "एक लाख"
     assert number_to_nepali_words(1234567) == "बाह्र लाख चौंतीस हजार पाँच सय सतसट्ठी"
     # Note: 12,34,567 -> 12 Lakhs 34 Thousand 5 Hundred 67
+
+
+def test_number_to_nepali_words_negative():
+    """Negative numbers get a 'ऋणात्मक' prefix."""
+    assert number_to_nepali_words(-25) == "ऋणात्मक पच्चीस"
+    assert number_to_nepali_words(-100) == "ऋणात्मक एक सय"
+
+
+def test_number_to_nepali_words_invalid_raises():
+    with pytest.raises(ValueError, match="Cannot convert"):
+        number_to_nepali_words("hello")
+    with pytest.raises(ValueError, match="Cannot convert"):
+        number_to_nepali_words(float("inf"))
+    with pytest.raises(ValueError, match="boolean"):
+        number_to_nepali_words(True)
 
 
 def test_english_to_nepali_unicode():

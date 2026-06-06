@@ -1,7 +1,10 @@
 # Test Suite for django-nepkit
 
 ## Overview
-Comprehensive pytest test suite covering all major components of the django-nepkit library.
+
+Comprehensive pytest test suite covering all major components of the
+django-nepkit library. The library is **framework-agnostic** — there is
+no longer any DRF or django-filter dependency.
 
 ## Running Tests
 
@@ -18,49 +21,42 @@ DJANGO_SETTINGS_MODULE=django_nepkit.tests.settings uv run pytest django_nepkit/
 
 ## Test Coverage
 
-### ✅ Models (`test_models.py`) - 15 tests
-- `NepaliDateField`: Storage format, retrieval, null handling, language settings
-- `NepaliDateTimeField`: DateTime storage and retrieval
-- `NepaliPhoneNumberField`: Valid/invalid phone number validation
-- Location fields: Province, District, Municipality choices and language support
+### ✅ Models (`test_models.py`)
+- `NepaliDateField`, `NepaliDateTimeField`, `NepaliTimeField`: storage, retrieval, language settings
+- `NepaliPhoneNumberField`: valid / invalid phone numbers
+- Location fields: province, district, municipality choices and language support
 
-### ✅ Forms (`test_forms.py`) - 6 tests
-- `NepaliDateFormField`: Input validation, multiple formats, required/optional handling
+### ✅ Forms (`test_forms.py`)
+- `NepaliDateFormField`: input validation, multiple formats, required/optional handling
 
-### ✅ Validators (`test_validators.py`) - 7 tests
-- `validate_nepali_phone_number`: Mobile and landline validation patterns
+### ✅ Validators (`test_validators.py`)
+- `validate_nepali_phone_number`: mobile and landline validation patterns
 
-### ✅ Utilities (`test_utils.py`) - 10 tests
-- `try_parse_nepali_date`: Date parsing from strings and objects
-- `try_parse_nepali_datetime`: DateTime parsing with edge cases
+### ✅ Utilities (`test_utils.py`)
+- `try_parse_nepali_date` / `try_parse_nepali_datetime`
+- `try_parse_nepali_time` / `format_nepali_time`
 
-### ✅ Serializers (`test_serializers.py`) - 10 tests
-- `NepaliDateSerializerField`: Serialization/deserialization
-- `NepaliDateTimeSerializerField`: DateTime handling
-- Language output (Devanagari support)
+### ✅ API helpers (`test_api.py`)
+- `serialize_nepali_date` / `deserialize_nepali_date`
+- `serialize_nepali_datetime` / `deserialize_nepali_datetime`
+- `serialize_nepali_time` / `deserialize_nepali_time`
+- `serialize_nepali_currency` / `deserialize_nepali_currency`
+- `to_decimal`
+- `build_localized_payload`
 
-### ✅ Filters (`test_filters.py`) - 4 tests
-- `NepaliDateYearFilter`: Year-based filtering
-- `NepaliDateMonthFilter`: Month-based filtering
+### ✅ Admin (`test_admin_currency.py`, `test_admin_media.py`)
+- Currency formatting helpers
+- Address-chaining media wiring
 
-### ⚠️ Widgets (`test_widgets.py`) - 11 tests (10 xfail)
-- Widget rendering tests marked as xfail due to Django app registry timing issues in test environment
-- HTMX configuration test passes
+### ✅ Address chaining JS (`test_address_chaining_js.py`)
+- Static-analysis checks for the JavaScript init / change handlers
 
-## Test Statistics
-- **Total Tests**: 62
-- **Passing**: 50
-- **Expected Failures (xfail)**: 11 (widget rendering)
-- **Actual Failures**: 1 (phone validation edge case)
-
-## Known Issues
-1. **Widget Rendering Tests**: Marked as xfail due to Django translation infrastructure initialization timing in test environment. These work correctly in production.
-2. **Phone Validation**: One edge case test needs adjustment for the validator's actual behavior.
+### ✅ Widgets (`test_widgets.py`)
+- `NepaliDatePickerWidget`, `NepaliTimeWidget`, location select widgets
 
 ## Dependencies
-- pytest
-- pytest-django (via DJANGO_SETTINGS_MODULE)
-- Django
-- nepali-datetime
-- djangorestframework (optional, for serializer tests)
-- django-filter (optional, for filter tests)
+
+- `pytest`
+- `pytest-django` (via `DJANGO_SETTINGS_MODULE`)
+- `Django`
+- `nepali`

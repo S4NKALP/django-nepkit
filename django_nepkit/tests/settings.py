@@ -42,5 +42,6 @@ NEPKIT = {
     "DEFAULT_LANGUAGE": "en",
     "ADMIN_DATEPICKER": True,
     "TIME_FORMAT": 12,
+    "BS_TIME_FORMAT": "%I:%M %p",
     "DATE_INPUT_FORMATS": ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"],
 }

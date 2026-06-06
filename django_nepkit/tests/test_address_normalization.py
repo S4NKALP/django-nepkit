@@ -1,4 +1,4 @@
-from django_nepkit.utils import normalize_address
+from django_nepkit.utils import _find_address_components, normalize_address
 
 
 def test_normalize_address_empty():
@@ -66,3 +66,27 @@ def test_normalize_address_partial_tokens():
     result = normalize_address("Lalitpur")
     assert result["district"] == "Lalitpur"
     assert result["municipality"] == "Lalitpur Metropolitan City"
+
+
+def test_normalize_address_is_memoised():
+    """Repeated calls for the same input hit the LRU cache."""
+    _find_address_components.cache_clear()
+    a = _find_address_components("Kathmandu")
+    info = _find_address_components.cache_info()
+    assert info.hits == 0
+    assert info.misses == 1
+    b = _find_address_components("Kathmandu")
+    info2 = _find_address_components.cache_info()
+    assert info2.hits == 1
+    assert a is b  # cached tuple is the same object
+
+
+def test_normalize_address_returns_fresh_dict():
+    """``normalize_address`` returns a fresh dict so callers can mutate safely."""
+    a = normalize_address("Kathmandu")
+    b = normalize_address("Kathmandu")
+    assert a == b
+    assert a is not b
+    a["district"] = "mutated"
+    # The next call must not see the mutation.
+    assert normalize_address("Kathmandu")["district"] == "Kathmandu"

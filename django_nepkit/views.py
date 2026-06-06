@@ -1,102 +1,132 @@
-from django.http import JsonResponse, HttpResponse
+import logging
 
+from django.http import HttpResponse, JsonResponse
+from django.utils.html import format_html, format_html_join
+
+from django_nepkit.conf import nepkit_settings
 from django_nepkit.utils import (
     get_districts_by_province,
     get_municipalities_by_district,
 )
 
-from django_nepkit.conf import nepkit_settings
+logger = logging.getLogger(__name__)
+
+# Accepted values for ``?ne=`` / ``?en=`` query params. Anything else is
+# either treated as "not provided" (default) or, with ``strict=True``,
+# rejected.
+_TRUE_VALUES = {"true", "1", "yes", "on"}
+_FALSE_VALUES = {"false", "0", "no", "off"}
+
+
+def _coerce_bool(raw):
+    """Validate a boolean query string value.
+
+    Returns:
+        ``True``/``False`` if the value is recognised, ``None`` otherwise.
+    """
+    if raw is None:
+        return None
+    lowered = raw.lower()
+    if lowered in _TRUE_VALUES:
+        return True
+    if lowered in _FALSE_VALUES:
+        return False
+    return None
 
 
 def _render_options(data, placeholder):
-    """Internal helper to render list of options as HTML."""
-    options = [f'<option value="">{placeholder}</option>']
-    for item in data:
-        options.append(f'<option value="{item["id"]}">{item["text"]}</option>')
-    return HttpResponse("\n".join(options), content_type="text/html")
+    """Render a list of location options as HTML.
+
+    All values are HTML-escaped so that user-supplied data injected via
+    data import can't smuggle markup into the rendered page.
+    """
+    rendered_options = format_html_join(
+        "\n",
+        '<option value="{}">{}</option>',
+        ((item.get("id", ""), item.get("text", "")) for item in data),
+    )
+    html = format_html(
+        '<option value="">{0}</option>\n{1}', placeholder, rendered_options
+    )
+    return HttpResponse(str(html), content_type="text/html")
 
 
 def _get_primary_param(request, param_name, exclude_params=None):
     """
-    Extract a parameter from request.GET with fallback logic.
+    Extract a parameter from ``request.GET``.
 
-    Args:
-        request: Django request object
-        param_name: Primary parameter name to look for
-        exclude_params: List of parameter names to exclude from fallback
-
-    Returns:
-        Parameter value or None
+    The primary parameter is read first.  If it is not present, the helper
+    falls back to the **single** remaining non-internal parameter — this
+    is a soft contract that makes the chained-select endpoints
+    friendlier to hand-written URLs (``?Bagmati``), but it is **not**
+    used when the query string has multiple non-internal keys (which
+    would make the result ambiguous).
     """
     from django_nepkit.constants import INTERNAL_PARAMS
 
     if exclude_params is None:
         exclude_params = INTERNAL_PARAMS
 
-    # Try primary parameter first
     value = request.GET.get(param_name)
+    if value:
+        return value
 
-    # Fallback: take the first non-internal parameter
-    if not value:
-        for key, val in request.GET.items():
-            if key not in exclude_params and val:
-                value = val
-                break
+    non_internal = [
+        (k, v)
+        for k, v in request.GET.items()
+        if k not in exclude_params and v and k != param_name
+    ]
+    if len(non_internal) == 1:
+        return non_internal[0][1]
+    return None
 
-    return value
 
-
-def _parse_language_params(request):
+def _parse_language_params(request, strict=False):
     """
-    Parse language parameters from request.
+    Parse the ``?ne=`` / ``?en=`` query parameters.
 
     Args:
-        request: Django request object
+        request: Django request.
+        strict: When ``True``, raise ``ValueError`` if the value is
+            present but unrecognised (anything outside
+            ``true|false|1|0|yes|no|on|off``).  When ``False`` (the
+            default), unrecognised values fall back to the project
+            default so existing integrations aren't broken.
 
     Returns:
-        Tuple of (ne, en) boolean values
+        Tuple of ``(ne, en)`` booleans.
     """
     default_lang = nepkit_settings.DEFAULT_LANGUAGE
-    ne_param = request.GET.get("ne")
-    ne = ne_param.lower() == "true" if ne_param else default_lang == "ne"
 
-    en_param = request.GET.get("en")
-    en = en_param.lower() == "true" if en_param else not ne
+    ne_raw = request.GET.get("ne")
+    en_raw = request.GET.get("en")
 
-    return ne, en
+    ne_value = _coerce_bool(ne_raw)
+    en_value = _coerce_bool(en_raw)
+
+    if strict and ne_raw is not None and ne_value is None:
+        raise ValueError(f"Invalid value for ?ne=: {ne_raw!r}")
+    if strict and en_raw is not None and en_value is None:
+        raise ValueError(f"Invalid value for ?en=: {en_raw!r}")
+
+    if ne_value is None:
+        ne_value = default_lang == "ne"
+    if en_value is None:
+        en_value = not ne_value
+
+    return ne_value, en_value
 
 
 def _should_return_html(request):
-    """
-    Check if response should be HTML format.
-
-    Args:
-        request: Django request object
-
-    Returns:
-        Boolean indicating if HTML format is requested
-    """
-    return (
-        request.GET.get("html", "false").lower() == "true"
-        or request.headers.get("HX-Request") == "true"
-    )
+    """Decide whether to return HTML (for HTMX / direct include) or JSON."""
+    if request.headers.get("HX-Request") == "true":
+        return True
+    return request.GET.get("html", "false").lower() == "true"
 
 
 def _location_list_view(request, param_name, data_func, placeholders):
-    """
-    Generic view handler for location hierarchy endpoints.
-
-    Args:
-        request: Django request object
-        param_name: Name of the primary parameter to extract
-        data_func: Function to call to get location data
-        placeholders: Tuple of (nepali_placeholder, english_placeholder)
-
-    Returns:
-        JsonResponse or HttpResponse with location data
-    """
+    """Generic handler for the province→district→municipality chain."""
     param_value = _get_primary_param(request, param_name)
-
     if not param_value:
         return JsonResponse([], safe=False)
 
@@ -108,12 +138,11 @@ def _location_list_view(request, param_name, data_func, placeholders):
     if as_html:
         placeholder = placeholders[0] if ne else placeholders[1]
         return _render_options(data, placeholder)
-
     return JsonResponse(data, safe=False)
 
 
 def district_list_view(request):
-    """Return list of districts for a given province."""
+    """Return districts for a given province."""
     from django_nepkit.constants import PLACEHOLDERS
 
     return _location_list_view(
@@ -125,7 +154,7 @@ def district_list_view(request):
 
 
 def municipality_list_view(request):
-    """Return list of municipalities for a given district."""
+    """Return municipalities for a given district."""
     from django_nepkit.constants import PLACEHOLDERS
 
     return _location_list_view(

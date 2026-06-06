@@ -3,6 +3,7 @@ Tests for django-nepkit configuration (conf.py).
 """
 
 import pytest
+from django.test import override_settings
 
 
 class TestNepkitSettings:
@@ -86,3 +87,43 @@ class TestNepkitSettings:
         # Others still use defaults
         assert settings.DEFAULT_LANGUAGE == "en"
         assert settings.ADMIN_DATEPICKER is True
+
+    def test_readonly_settings(self):
+        """Setting attributes on the live ``nepkit_settings`` is rejected."""
+        from django_nepkit.conf import nepkit_settings
+
+        with pytest.raises(AttributeError, match="read-only"):
+            nepkit_settings.DEFAULT_LANGUAGE = "fr"
+
+    def test_module_level_settings_re_read_on_override(self):
+        """``override_settings(NEPKIT=...)`` propagates to ``nepkit_settings``."""
+        from django_nepkit.conf import nepkit_settings
+
+        with override_settings(
+            NEPKIT={
+                "DEFAULT_LANGUAGE": "en",
+                "TIME_FORMAT": 12,
+                "BS_DATE_FORMAT": "%d/%m/%Y",
+                "BS_TIME_FORMAT": "%I:%M %p",
+                "BS_DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
+            }
+        ):
+            assert nepkit_settings.BS_DATE_FORMAT == "%d/%m/%Y"
+        # After the override, it reverts.
+        assert nepkit_settings.BS_DATE_FORMAT == "%Y-%m-%d"
+
+    def test_module_level_settings_no_user_settings_arg(self):
+        """The module-level instance doesn't capture user_settings at import."""
+        from django_nepkit.conf import nepkit_settings
+
+        assert nepkit_settings._explicit_user_settings is None
+
+    def test_custom_instance_with_explicit_user_settings(self):
+        """Instances created with explicit user_settings use them verbatim."""
+        from django_nepkit.conf import NepkitSettings, DEFAULTS
+
+        s = NepkitSettings(user_settings={"DEFAULT_LANGUAGE": "en"}, defaults=DEFAULTS)
+        # Even when override_settings flips the language, the explicit
+        # instance keeps the user-supplied value.
+        with override_settings(NEPKIT={"DEFAULT_LANGUAGE": "en"}):
+            assert s.DEFAULT_LANGUAGE == "en"

@@ -3,6 +3,9 @@ Constants for django-nepkit package.
 Contains hardcoded values, word mappings, and configuration data.
 """
 
+# Word used to prefix negative numbers in :func:`number_to_nepali_words`.
+NEGATIVE_PREFIX = "ऋणात्मक"
+
 # Nepali number words mapping (0-99)
 NEPALI_ONES = [
     "",

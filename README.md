@@ -19,13 +19,13 @@ Building software for local requirements comes with unique challenges, from hand
 
 ## 🎯 Features
 
-- **📅 BS Date Support**: Model fields for `nepalidate` and `nepalidatetime` objects.
+- **📅 BS Date & Time Support**: Model fields for `nepalidate`, `nepalidatetime` and `time` objects, with optional Devanagari digit output.
 - **🗺️ Regional Locations**: Pre-defined Provinces, Districts, and Municipalities.
 - **📱 Phone Validation**: Patterns for local mobile and landline numbers.
 - **💰 Currency Formatting**: `NepaliCurrencyField` with automatic Lakhs/Crores comma placement.
 - **🔤 Numbers to Words**: Convert digits into Nepali text representation.
 - **🔌 Admin Integration**: Automatic setup for datepickers and localized list displays.
-- **🚀 API Support**: DRF Serializers and Filtering backends for BS searching and ordering.
+- **🚀 Framework-agnostic API helpers**: Pure-Python serialize/deserialize functions that work with any framework (DRF, Ninja, plain Django, …) — **no third-party API dependency**.
 - **⚡ Location Chaining**: Address linking via client side JS or server driven HTMX.
 - **🔍 Address Normalization**: Utility to extract structured locations from raw strings.
 
@@ -59,9 +59,19 @@ NEPKIT = {
     "DEFAULT_LANGUAGE": "en",           # "en" or "ne"
     "ADMIN_DATEPICKER": True,           # Toggle the datepicker
     "TIME_FORMAT": 12,                  # 12 or 24 hour display
-    "DATE_INPUT_FORMATS": ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"], # Input formats
+    "BS_DATE_FORMAT": "%Y-%m-%d",       # Default storage / display format
+    "BS_DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
+    "BS_TIME_FORMAT": "%I:%M %p",       # 12-hour by default
+    "DATE_INPUT_FORMATS": ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"],
+    "TIME_INPUT_FORMATS": ["%H:%M:%S", "%H:%M", "%I:%M %p", "%I:%M:%S %p"],
 }
 ```
+
+> Settings are read from `settings.NEPKIT` on every access, so
+> `override_settings(NEPKIT={…})` (e.g. in tests) works as expected. If
+> you need to flip `DEFAULT_LANGUAGE` at runtime, call
+> `field.refresh_choices()` on any `ProvinceField` / `DistrictField` /
+> `MunicipalityField` that has already been instantiated.
 
 ---
 
@@ -110,6 +120,7 @@ class Address(models.Model):
     province = ProvinceField()
     district = DistrictField()
     municipality = MunicipalityField()
+```
 
 ### Address Normalization
 
@@ -124,7 +135,6 @@ result = normalize_address("House 123, Bharatpur, Chitwan")
 
 result_ne = normalize_address("विराटनगर, कोशी")
 # Returns: {'province': 'कोशी प्रदेश', 'district': 'मोरङ', 'municipality': 'विराटनगर महानगरपालिका'}
-```
 ```
 
 ### Server Side Chaining (HTMX)
@@ -141,17 +151,56 @@ Enable `htmx=True` for a server driven experience.
 
 ---
 
-## 🔌 API & DRF Support
+## 🔌 API Integration (framework-agnostic)
 
-Search and ordering work natively. BS year/month filtering is supported.
+`django-nepkit` ships pure-Python helpers in `django_nepkit.api` so you can
+emit JSON from **any** view layer — plain Django, DRF, Django Ninja, or
+something custom. There is no dependency on a third-party API package.
 
 ```python
-from django_nepkit.filters import NepaliDateYearFilter
+from django.http import JsonResponse
+from django_nepkit import api as nepkit_api
 
-class ProfileFilter(filters.FilterSet):
-    # Filter by BS Year (e.g., /api/profiles/?year=2081)
-    year = NepaliDateYearFilter(field_name="birth_date")
+def person_payload(person, *, ne: bool = False) -> dict:
+    return nepkit_api.build_localized_payload(
+        {
+            "id": person.id,
+            "name": person.name,
+            "birth_date": nepkit_api.serialize_nepali_date(person.birth_date, ne=ne),
+            "amount": nepkit_api.serialize_nepali_currency(person.amount, ne=ne),
+        },
+        ne=ne,                              # also emits *_ne mirrors when ne=True
+    )
 ```
+
+Available helpers:
+
+| helper | purpose |
+| ------ | ------- |
+| `serialize_nepali_date` / `deserialize_nepali_date` | BS date strings ↔ `nepalidate` |
+| `serialize_nepali_datetime` / `deserialize_nepali_datetime` | BS datetime ↔ `nepalida­tetime` |
+| `serialize_nepali_time` / `deserialize_nepali_time` | HH:MM / hh:mm AM/PM ↔ `time` |
+| `serialize_nepali_currency` / `deserialize_nepali_currency` | `"Rs. 12,34,567.00"` / Devanagari digits ↔ `Decimal` |
+| `to_decimal` | coerce strings / numbers to `Decimal` |
+| `build_localized_payload` | add `*_ne` mirrors to a dict representation |
+
+All `serialize_*` / `deserialize_*` helpers (and `to_decimal`) accept a
+`strict: bool = False` argument.  When `strict=True`, unparseable input
+raises `ValueError` instead of being silently returned as `str(value)`,
+which makes it easy to layer strict validation into API endpoints that
+need to surface 400s on bad input:
+
+```python
+try:
+    cleaned = nepkit_api.deserialize_nepali_date(request.data["dob"], strict=True)
+except ValueError as exc:
+    return JsonResponse({"error": str(exc)}, status=400)
+```
+
+The previous `django_nepkit.serializers` (DRF) and `django_nepkit.ninja`
+modules were removed in v0.2.2 because they made the package drag in
+extra dependencies. If you need a thin DRF/Ninja adapter it is now a
+ten-line file that delegates to `django_nepkit.api`.
 
 ---
 
@@ -219,7 +268,8 @@ No. The `YYYY-MM-DD` format is hardcoded to ensure database level sorting and in
 
 **Q: Can I use Devanagari output?**
 
-Yes. Pass `ne=True` to fields, forms, or serializers.
+Yes. Pass `ne=True` to fields, widgets, or use the `serialize_*` helpers
+in `django_nepkit.api` to emit Devanagari digits from any view.
 
 **Q: Can I display the datepicker in English?**
 
