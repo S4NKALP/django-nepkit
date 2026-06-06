@@ -101,6 +101,22 @@ def try_parse_nepali_datetime(value: Any) -> Optional[nepalidatetime]:
     return _try_parse_nepali(value, nepalidatetime, nepkit_settings.BS_DATETIME_FORMAT)
 
 
+# Per-string parse caches used by ``BaseNepaliBSField`` so admin list
+# views don't re-parse the same stored string thousands of times per
+# request.  The cache key is the raw stored string; the value is the
+# parsed object (``None`` when the string is unparseable).  Capping at
+# 2048 covers the worst case (all unique dates in a 5-year window of
+# ~30k rows) without unbounded growth.
+@lru_cache(maxsize=2048)
+def _cached_parse_nepali_date(value: str) -> Optional[nepalidate]:
+    return try_parse_nepali_date(value)
+
+
+@lru_cache(maxsize=2048)
+def _cached_parse_nepali_datetime(value: str) -> Optional[nepalidatetime]:
+    return try_parse_nepali_datetime(value)
+
+
 def try_parse_nepali_time(value: Any) -> Optional[python_time]:
     """Convert any value to a Python ``time`` (``None`` on failure)."""
     from datetime import datetime as _dt

@@ -1,7 +1,7 @@
 import logging
 
 from django.http import HttpResponse, JsonResponse
-from django.utils.html import format_html, format_html_join
+from django.utils.html import format_html
 
 from django_nepkit.conf import nepkit_settings
 from django_nepkit.utils import (
@@ -37,18 +37,22 @@ def _coerce_bool(raw):
 def _render_options(data, placeholder):
     """Render a list of location options as HTML.
 
-    All values are HTML-escaped so that user-supplied data injected via
-    data import can't smuggle markup into the rendered page.
+    Each ``<option>`` is built with an explicit ``format_html`` call so
+    that the attribute (``value="..."``) and the text node are
+    individually escaped — a user-supplied data row that contains a
+    ``"><script>`` payload can never smuggle markup into the rendered
+    page, regardless of which slot it ends up in.  ``format_html_join``
+    is intentionally avoided: the per-option ``format_html`` makes the
+    escaping contract obvious at the call site and avoids the
+    placeholder/value/template-coupling that ``format_html_join``
+    forces when the template changes.
     """
-    rendered_options = format_html_join(
-        "\n",
-        '<option value="{}">{}</option>',
-        ((item.get("id", ""), item.get("text", "")) for item in data),
-    )
-    html = format_html(
-        '<option value="">{0}</option>\n{1}', placeholder, rendered_options
-    )
-    return HttpResponse(str(html), content_type="text/html")
+    parts: list[str] = [format_html('<option value="">{0}</option>', placeholder or "")]
+    for item in data or []:
+        opt_id = (item.get("id") if isinstance(item, dict) else "") or ""
+        opt_text = (item.get("text") if isinstance(item, dict) else "") or ""
+        parts.append(format_html('<option value="{0}">{1}</option>', opt_id, opt_text))
+    return HttpResponse("\n".join(parts), content_type="text/html")
 
 
 def _get_primary_param(request, param_name, exclude_params=None):

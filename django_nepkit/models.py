@@ -10,6 +10,8 @@ from nepali.datetime import nepalidate, nepalidatetime
 from nepali.locations import districts, municipalities, provinces
 
 from django_nepkit.utils import (
+    _cached_parse_nepali_date,
+    _cached_parse_nepali_datetime,
     try_parse_nepali_date,
     try_parse_nepali_datetime,
     try_parse_nepali_time,
@@ -146,10 +148,23 @@ class BaseNepaliBSField(NepaliFieldMixin, models.CharField):
         return parsed
 
     def _parse_str(self, value):
-        """Parse a stored string into a Nepali object (or ``None``)."""
-        if isinstance(value, str):
-            return self.parse_func(value)
-        return None
+        """Parse a stored string into a Nepali object (or ``None``).
+
+        Routes through a per-string ``lru_cache`` so admin list views
+        that load thousands of rows don't re-parse the same stored date
+        every time.  The cache is shared across all field instances
+        (the parse result for a given string is the same regardless of
+        which model it's bound to).
+        """
+        if not isinstance(value, str):
+            return None
+        if self.nepali_cls is nepalidate:
+            return _cached_parse_nepali_date(value)
+        if self.nepali_cls is nepalidatetime:
+            return _cached_parse_nepali_datetime(value)
+        # Subclasses with a different ``nepali_cls`` fall back to the
+        # uncached ``parse_func``.
+        return self.parse_func(value)
 
     def to_python(self, value):
         if value is None or isinstance(value, self.nepali_cls):
