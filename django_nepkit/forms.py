@@ -3,10 +3,15 @@ from datetime import date as python_date
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from nepali.datetime import nepalidate
+from nepali.exceptions import FormatNotMatchException
 
-from django_nepkit.utils import try_parse_nepali_date
+from django_nepkit.utils import BS_DATE_FORMAT, try_parse_nepali_date
 from django_nepkit.validators import validate_nepali_phone_number
 from django_nepkit.widgets import NepaliDatePickerWidget
+
+# Anything ``try_parse_nepali_date`` (or ``str(value)`` coercion) might
+# raise that we want to translate into a user-friendly ``ValidationError``.
+_PARSE_ERRORS = (ValueError, TypeError, FormatNotMatchException)
 
 
 class NepaliDateFormField(forms.DateField):
@@ -32,9 +37,7 @@ class NepaliDateFormField(forms.DateField):
             if parsed is not None:
                 return parsed
             raise ValueError("Invalid BS date format")
-        except Exception:
-            from django_nepkit.utils import BS_DATE_FORMAT
-
+        except _PARSE_ERRORS:
             raise forms.ValidationError(
                 _("Enter a valid Nepali date in %(format)s format.")
                 % {"format": BS_DATE_FORMAT},

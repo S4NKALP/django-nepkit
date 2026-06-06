@@ -198,22 +198,28 @@ class NepaliAdminMixin:
     """Provides date formatting helpers for Admin classes."""
 
     def _get_field_ne_setting(self, field_name):
+        """Return the field's ``ne`` flag, or ``None`` if the field has none.
+
+        ``None`` distinguishes "field has no opinion" from an explicit
+        ``ne=False`` (English), which the caller can use to fall back to
+        the project default without overwriting a field-level override.
+        """
         if not hasattr(self, "model"):
-            return False
+            return None
         try:
             field = self.model._meta.get_field(field_name)
             if hasattr(field, "ne"):
                 return field.ne
         except (FieldDoesNotExist, AttributeError):
-            return False
-        return False
+            return None
+        return None
 
     def format_nepali_date(
         self, date_value, format_string="%B %d, %Y", ne=None, field_name=None
     ):
         if ne is None and field_name:
             ne = self._get_field_ne_setting(field_name)
-        elif ne is None:
+        if ne is None:
             ne = nepkit_settings.DEFAULT_LANGUAGE == "ne"
         return format_nepali_date(date_value, format_string, ne=ne)
 
@@ -226,7 +232,7 @@ class NepaliAdminMixin:
     ):
         if ne is None and field_name:
             ne = self._get_field_ne_setting(field_name)
-        elif ne is None:
+        if ne is None:
             ne = nepkit_settings.DEFAULT_LANGUAGE == "ne"
         return format_nepali_datetime(datetime_value, format_string, ne=ne)
 
@@ -308,7 +314,9 @@ class NepaliModelAdmin(NepaliAdminMixin, admin.ModelAdmin):
             if val is None:
                 return self.get_empty_value_display()
             ne = self._get_field_ne_setting(field_name)
-            if ne is False:
+            if ne is None:
+                # Field has no ``ne`` attribute (e.g. plain ``TimeField``)
+                # — fall back to the project default.
                 ne = nepkit_settings.DEFAULT_LANGUAGE == "ne"
             return format_nepali_time_admin(val, ne=ne)
 
