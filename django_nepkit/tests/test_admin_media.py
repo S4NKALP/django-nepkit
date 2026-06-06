@@ -3,6 +3,7 @@ Tests for ``NepaliModelAdmin`` media and address-chaining integration.
 """
 
 from django.db import models
+from django.test import override_settings
 
 from django_nepkit.admin import NepaliModelAdmin
 from django_nepkit.models import (
@@ -85,3 +86,46 @@ class TestFormfieldForDbfieldIdempotency:
             _PlainModel._meta.get_field("name"), request=None
         )
         assert ff is not None
+
+
+class TestGetFieldNeSetting:
+    """``_get_field_ne_setting`` must distinguish 'no opinion' from explicit ``False``."""
+
+    def test_ne_true_field(self):
+        class _Model(models.Model):
+            t = NepaliTimeField(ne=True)
+
+            class Meta:
+                app_label = "django_nepkit"
+
+        admin_cls = NepaliModelAdmin(_Model, AdminSite())
+        assert admin_cls._get_field_ne_setting("t") is True
+
+    def test_ne_false_field_keeps_explicit_false(self):
+        """An explicit ``ne=False`` must NOT be silently overwritten."""
+
+        class _Model(models.Model):
+            t = NepaliTimeField(ne=False)
+
+            class Meta:
+                app_label = "django_nepkit"
+
+        admin_cls = NepaliModelAdmin(_Model, AdminSite())
+        # Even with the project defaulting to "ne", the explicit False wins.
+        with override_settings(NEPKIT={"DEFAULT_LANGUAGE": "ne"}):
+            assert admin_cls._get_field_ne_setting("t") is False
+
+    def test_unknown_field_returns_none(self):
+        admin_cls = NepaliModelAdmin(_TimeModel, AdminSite())
+        assert admin_cls._get_field_ne_setting("nonexistent") is None
+
+    def test_plain_field_without_ne_returns_none(self):
+        class _Model(models.Model):
+            name = models.CharField(max_length=10)
+
+            class Meta:
+                app_label = "django_nepkit"
+
+        admin_cls = NepaliModelAdmin(_Model, AdminSite())
+        # ``CharField`` has no ``ne`` attribute → None (was previously False).
+        assert admin_cls._get_field_ne_setting("name") is None

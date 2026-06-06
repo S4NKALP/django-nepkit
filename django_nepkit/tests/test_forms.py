@@ -64,3 +64,21 @@ class TestNepaliDateFormField:
 
         result = field.clean(date_obj)
         assert result is date_obj
+
+    def test_unparseable_string_raises_validation_error(self):
+        """A non-date string yields a ValidationError, not a raw exception."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        field = NepaliDateFormField()
+        with pytest.raises(DjangoValidationError):
+            field.clean("totally not a date")
+
+    def test_nepali_format_not_match_raises_validation_error(self):
+        """``FormatNotMatchException`` from the nepali package is caught
+        explicitly (it doesn't inherit from ``ValueError``)."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        field = NepaliDateFormField()
+        # 32/13/2081 is well-formed-looking but matches no Nepali format.
+        with pytest.raises(DjangoValidationError):
+            field.clean("32/13/2081")
